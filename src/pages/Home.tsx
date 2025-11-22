@@ -124,6 +124,11 @@ export default function Home() {
       .slice(0, 8);
   };
 
+  // 获取所有网站,按访问次数排序
+  const getAllSitesSortedByVisits = () => {
+    return [...sites].sort((a, b) => b.visits - a.visits);
+  };
+
   // 按分类分组网站
   const getSitesByCategory = (categoryId: string) => {
     return sites.filter((site) => site.category_id === categoryId);
@@ -325,41 +330,47 @@ export default function Home() {
           </div>
         )}
 
-        {/* 所有分类 */}
-        {getNonEmptyCategories().map((category) => (
-          <div key={category.id} id={`category-${category.id}`} className="mb-12 scroll-mt-20">
-            <h2 className="text-2xl font-bold text-green-500 mb-6">{category.name}</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-4">
-              {getSitesByCategory(category.id).map((site) => (
-                <button
-                  key={site.id}
-                  onClick={() => handleSiteClick(site)}
-                  className="group relative bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-5 hover:bg-white/10 hover:border-green-500/50 transition-all"
-                >
-                  {/* 图标 */}
-                  <div className="flex items-center justify-center mb-3">
-                    <img
-                      src={`https://www.google.com/s2/favicons?domain=${new URL(site.url).hostname}&sz=64`}
-                      alt={site.name}
-                      className="w-12 h-12 group-hover:scale-110 transition-transform"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                        const emojiSpan = e.currentTarget.nextElementSibling as HTMLElement;
-                        if (emojiSpan) emojiSpan.style.display = 'block';
-                      }}
-                    />
-                    <span className="hidden text-5xl">{site.logo}</span>
-                  </div>
+        {/* 所有网站(按访问次数排序) */}
+        <div className="mb-12">
+          <h2 className="text-2xl font-bold text-green-500 mb-6">所有网站</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-4">
+            {getAllSitesSortedByVisits().map((site) => (
+              <button
+                key={site.id}
+                onClick={() => handleSiteClick(site)}
+                className="group relative bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-5 hover:bg-white/10 hover:border-green-500/50 transition-all"
+              >
+                {/* 图标 */}
+                <div className="flex items-center justify-center mb-3">
+                  <img
+                    src={`https://www.google.com/s2/favicons?domain=${new URL(site.url).hostname}&sz=64`}
+                    alt={site.name}
+                    className="w-12 h-12 group-hover:scale-110 transition-transform"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      const emojiSpan = e.currentTarget.nextElementSibling as HTMLElement;
+                      if (emojiSpan) emojiSpan.style.display = 'block';
+                    }}
+                  />
+                  <span className="hidden text-5xl">{site.logo}</span>
+                </div>
 
-                  {/* 名称 */}
-                  <p className="text-sm text-white/80 text-center truncate group-hover:text-white transition-colors">
-                    {site.name}
-                  </p>
-                </button>
-              ))}
-            </div>
+                {/* 名称 */}
+                <p className="text-sm text-white/80 text-center truncate group-hover:text-white transition-colors">
+                  {site.name}
+                </p>
+
+                {/* 访问次数徽章(如果有访问记录) */}
+                {site.visits > 0 && (
+                  <span className="absolute top-2 right-2 bg-green-500 text-black text-xs px-2 py-1 rounded-full font-bold">
+                    {site.visits}
+                  </span>
+                )}
+              </button>
+            ))}
           </div>
-        ))}
+        </div>
+
 
         {/* 空状态 */}
         {getNonEmptyCategories().length === 0 && (
