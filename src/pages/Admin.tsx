@@ -553,25 +553,47 @@ export default function Admin() {
                 throw new Error('文件中没有找到书签');
             }
 
-            setImportProgress({ current: 0, total: totalBookmarks, status: '创建分类...' });
+            setImportProgress({ current: 0, total: totalBookmarks, status: '检查分类...' });
 
-            // 创建分类映射
+            // 创建分类映射(智能匹配已有分类)
             const categoryIdMap = new Map<string, string>();
             let categoryIndex = categories.length;
 
             for (const [categoryName] of parsedData.categories.entries()) {
-                const { data: newCategory } = await supabase
-                    .from('categories')
-                    .insert({
-                        user_id: user.id,
-                        name: categoryName,
-                        order_index: categoryIndex++,
-                    })
-                    .select()
-                    .single();
+                // 先查找是否已存在同名分类(不区分大小写)
+                const existingCategory = categories.find(
+                    (cat) => cat.name.toLowerCase() === categoryName.toLowerCase()
+                );
 
-                if (newCategory) {
-                    categoryIdMap.set(categoryName, newCategory.id);
+                if (existingCategory) {
+                    // 使用已有分类
+                    categoryIdMap.set(categoryName, existingCategory.id);
+                    setImportProgress({
+                        current: 0,
+                        total: totalBookmarks,
+                        status: `复用分类: ${categoryName}`,
+                    });
+                } else {
+                    // 创建新分类
+                    setImportProgress({
+                        current: 0,
+                        total: totalBookmarks,
+                        status: `创建分类: ${categoryName}`,
+                    });
+
+                    const { data: newCategory } = await supabase
+                        .from('categories')
+                        .insert({
+                            user_id: user.id,
+                            name: categoryName,
+                            order_index: categoryIndex++,
+                        })
+                        .select()
+                        .single();
+
+                    if (newCategory) {
+                        categoryIdMap.set(categoryName, newCategory.id);
+                    }
                 }
             }
 
@@ -648,6 +670,40 @@ export default function Admin() {
             setGlobalLoading(false);
             setImportProgress(null);
             e.target.value = '';
+        }
+    };
+
+    // 一键清除所有数据
+    const handleClearAllData = async () => {
+        const confirmText = '清除所有数据';
+        const userInput = prompt(
+            `⚠️ 此操作将删除所有书签和网站!\n\n这个操作不可恢复!\n\n请输入 "${confirmText}" 确认:`
+        );
+
+        if (userInput !== confirmText) {
+            if (userInput !== null) {
+                alert('操作已取消');
+            }
+            return;
+        }
+
+        setGlobalLoading(true);
+        try {
+            // 删除所有网站
+            const { error: sitesError } = await supabase
+                .from('sites')
+                .delete()
+                .eq('user_id', user.id);
+
+            if (sitesError) throw sitesError;
+
+            alert('所有书签和网站已清除!');
+            window.location.reload();
+        } catch (error) {
+            console.error('清除数据失败:', error);
+            alert('清除数据失败,请重试');
+        } finally {
+            setGlobalLoading(false);
         }
     };
 
@@ -1067,6 +1123,22 @@ export default function Admin() {
                                     className="hidden"
                                 />
                             </label>
+                        </div>
+
+                        <div className="p-6 bg-black/60 border border-red-500/30 rounded-lg">
+                            <h3 className="text-lg font-semibold text-red-500 mb-4">⚠️ 危险操作</h3>
+                            <p className="text-red-400/70 mb-4">
+                                清除所有书签和网站数据。<strong className="text-red-500">此操作不可恢复!</strong>
+                                <br />
+                                <span className="text-red-400/50 text-sm">注意: 分类不会被删除,只删除网站数据。</span>
+                            </p>
+                            <button
+                                onClick={handleClearAllData}
+                                className="flex items-center space-x-2 px-6 py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-lg transition-colors"
+                            >
+                                <Trash2 className="w-5 h-5 text-red-500" />
+                                <span className="text-red-500 font-semibold">清除所有数据</span>
+                            </button>
                         </div>
                     </div>
                 )}
