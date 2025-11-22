@@ -243,7 +243,19 @@ export default function Home() {
                   onClick={() => handleSiteClick(site)}
                   className="group relative bg-black/60 border border-green-500/30 rounded-lg p-4 hover:border-green-500 hover:bg-green-500/10 transition-all"
                 >
-                  <div className="text-6xl mb-2">{site.logo}</div>
+                  <div className="text-6xl mb-2 flex items-center justify-center">
+                    <img
+                      src={`https://www.google.com/s2/favicons?domain=${new URL(site.url).hostname}&sz=64`}
+                      alt={site.name}
+                      className="w-16 h-16"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        const emojiSpan = e.currentTarget.nextElementSibling as HTMLElement;
+                        if (emojiSpan) emojiSpan.style.display = 'block';
+                      }}
+                    />
+                    <span className="hidden">{site.logo}</span>
+                  </div>
                   <p className="text-sm text-green-400 truncate">{site.name}</p>
                   <span className="absolute top-2 right-2 bg-green-500 text-black text-xs px-2 py-1 rounded-full font-bold">
                     {site.visits}
@@ -265,7 +277,20 @@ export default function Home() {
                   onClick={() => handleSiteClick(site)}
                   className="bg-black/60 border border-green-500/30 rounded-lg p-6 hover:border-green-500 hover:bg-green-500/10 transition-all group"
                 >
-                  <div className="text-6xl mb-3 group-hover:scale-110 transition-transform">{site.logo}</div>
+                  <div className="text-6xl mb-3 group-hover:scale-110 transition-transform flex items-center justify-center">
+                    <img
+                      src={`https://www.google.com/s2/favicons?domain=${new URL(site.url).hostname}&sz=64`}
+                      alt={site.name}
+                      className="w-16 h-16"
+                      onError={(e) => {
+                        // fallback 到 emoji
+                        e.currentTarget.style.display = 'none';
+                        const emojiSpan = e.currentTarget.nextElementSibling as HTMLElement;
+                        if (emojiSpan) emojiSpan.style.display = 'block';
+                      }}
+                    />
+                    <span className="hidden">{site.logo}</span>
+                  </div>
                   <p className="text-sm text-green-400 truncate">{site.name}</p>
                 </button>
               ))}
