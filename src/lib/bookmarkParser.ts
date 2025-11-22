@@ -193,3 +193,18 @@ export function getEmojiForUrl(url: string): string {
         return '🔗';
     }
 }
+
+/**
+ * 获取网站的 favicon URL
+ * 使用 Google Favicon Service
+ */
+export function getFaviconUrl(url: string): string {
+    try {
+        const urlObj = new URL(url);
+        const domain = urlObj.hostname;
+        // 使用 Google Favicon Service,64x64 尺寸
+        return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+    } catch {
+        return '';
+    }
+}
