@@ -30,7 +30,9 @@ import {
     GripVertical,
     Download,
     Upload,
+    FileText,
 } from 'lucide-react';
+import { parseHTMLBookmarks, parseJSONBookmarks, getEmojiForUrl } from '../lib/bookmarkParser';
 
 // 可排序分类项组件
 function SortableCategory({ category, onEdit, onDelete }: any) {
@@ -119,6 +121,11 @@ export default function Admin() {
     );
     const [loading, setLoading] = useState(false);
     const [globalLoading, setGlobalLoading] = useState(false);
+    const [importProgress, setImportProgress] = useState<{
+        current: number;
+        total: number;
+        status: string;
+    } | null>(null);
 
     // 分类管理
     const [categories, setCategories] = useState<Category[]>([]);
@@ -514,6 +521,135 @@ export default function Admin() {
         }
     };
 
+    // 书签导入
+    const handleImportBookmarks = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !user) return;
+
+        setGlobalLoading(true);
+        setImportProgress({ current: 0, total: 0, status: '读取文件...' });
+
+        try {
+            const text = await file.text();
+            let parsedData;
+
+            // 根据文件类型解析
+            if (file.name.endsWith('.html') || file.name.endsWith('.htm')) {
+                parsedData = parseHTMLBookmarks(text);
+            } else if (file.name.endsWith('.json')) {
+                parsedData = parseJSONBookmarks(text);
+            } else {
+                throw new Error('不支持的文件格式,请选择 .html 或 .json 文件');
+            }
+
+            // 计算总数
+            let totalBookmarks = parsedData.uncategorized.length;
+            for (const bookmarks of parsedData.categories.values()) {
+                totalBookmarks += bookmarks.length;
+            }
+
+            if (totalBookmarks === 0) {
+                throw new Error('文件中没有找到书签');
+            }
+
+            setImportProgress({ current: 0, total: totalBookmarks, status: '创建分类...' });
+
+            // 创建分类映射
+            const categoryIdMap = new Map<string, string>();
+            let categoryIndex = categories.length;
+
+            for (const [categoryName] of parsedData.categories.entries()) {
+                const { data: newCategory } = await supabase
+                    .from('categories')
+                    .insert({
+                        user_id: user.id,
+                        name: categoryName,
+                        order_index: categoryIndex++,
+                    })
+                    .select()
+                    .single();
+
+                if (newCategory) {
+                    categoryIdMap.set(categoryName, newCategory.id);
+                }
+            }
+
+            // 导入书签
+            let imported = 0;
+            for (const [categoryName, bookmarks] of parsedData.categories.entries()) {
+                const categoryId = categoryIdMap.get(categoryName);
+                if (!categoryId) continue;
+
+                for (const bookmark of bookmarks) {
+                    setImportProgress({
+                        current: ++imported,
+                        total: totalBookmarks,
+                        status: `导入: ${bookmark.name}`,
+                    });
+
+                    await supabase.from('sites').insert({
+                        user_id: user.id,
+                        category_id: categoryId,
+                        name: bookmark.name,
+                        url: bookmark.url,
+                        logo: getEmojiForUrl(bookmark.url),
+                        visits: 0,
+                        order_index: bookmarks.indexOf(bookmark),
+                    });
+                }
+            }
+
+            // 处理未分类的书签
+            if (parsedData.uncategorized.length > 0) {
+                setImportProgress({
+                    current: imported,
+                    total: totalBookmarks,
+                    status: '创建"导入的书签"分类...',
+                });
+
+                const { data: uncategorizedCategory } = await supabase
+                    .from('categories')
+                    .insert({
+                        user_id: user.id,
+                        name: '导入的书签',
+                        order_index: categoryIndex,
+                    })
+                    .select()
+                    .single();
+
+                if (uncategorizedCategory) {
+                    for (const bookmark of parsedData.uncategorized) {
+                        setImportProgress({
+                            current: ++imported,
+                            total: totalBookmarks,
+                            status: `导入: ${bookmark.name}`,
+                        });
+
+                        await supabase.from('sites').insert({
+                            user_id: user.id,
+                            category_id: uncategorizedCategory.id,
+                            name: bookmark.name,
+                            url: bookmark.url,
+                            logo: getEmojiForUrl(bookmark.url),
+                            visits: 0,
+                            order_index: parsedData.uncategorized.indexOf(bookmark),
+                        });
+                    }
+                }
+            }
+
+            alert(`成功导入 ${imported} 个书签!`);
+            window.location.reload();
+        } catch (error) {
+            console.error('导入书签失败:', error);
+            alert(`导入失败: ${error instanceof Error ? error.message : '未知错误'}`);
+        } finally {
+            setGlobalLoading(false);
+            setImportProgress(null);
+            e.target.value = '';
+        }
+    };
+
     const filteredSites = sites.filter((site) => site.category_id === selectedCategoryId);
 
     return (
@@ -521,9 +657,26 @@ export default function Admin() {
             {/* 全局加载遮罩 */}
             {globalLoading && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center">
-                    <div className="flex flex-col items-center space-y-4">
+                    <div className="flex flex-col items-center space-y-4 bg-black/90 p-8 rounded-lg border border-green-500/30 min-w-[300px]">
                         <Loader2 className="w-12 h-12 text-green-500 animate-spin" />
-                        <p className="text-green-500">处理中...</p>
+                        {importProgress ? (
+                            <>
+                                <p className="text-green-500 font-semibold">{importProgress.status}</p>
+                                <p className="text-green-400 text-sm">
+                                    {importProgress.current} / {importProgress.total}
+                                </p>
+                                <div className="w-64 h-2 bg-green-500/20 rounded-full overflow-hidden">
+                                    <div
+                                        className="h-full bg-green-500 transition-all duration-300"
+                                        style={{
+                                            width: `${importProgress.total > 0 ? (importProgress.current / importProgress.total) * 100 : 0}%`,
+                                        }}
+                                    />
+                                </div>
+                            </>
+                        ) : (
+                            <p className="text-green-500">处理中...</p>
+                        )}
                     </div>
                 </div>
             )}
@@ -555,8 +708,8 @@ export default function Admin() {
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id as any)}
                             className={`px-6 py-3 font-medium transition-colors ${activeTab === tab.id
-                                    ? 'text-green-500 border-b-2 border-green-500'
-                                    : 'text-green-400/50 hover:text-green-400'
+                                ? 'text-green-500 border-b-2 border-green-500'
+                                : 'text-green-400/50 hover:text-green-400'
                                 }`}
                         >
                             {tab.label}
@@ -875,6 +1028,25 @@ export default function Admin() {
                                     type="file"
                                     accept=".json"
                                     onChange={handleImportData}
+                                    className="hidden"
+                                />
+                            </label>
+                        </div>
+
+                        <div className="p-6 bg-black/60 border border-green-500/30 rounded-lg">
+                            <h3 className="text-lg font-semibold text-green-500 mb-4">导入书签</h3>
+                            <p className="text-green-400/70 mb-4">
+                                从浏览器导出的 HTML 书签文件或 JSON 格式导入书签。支持 Chrome、Firefox、Edge 等浏览器。
+                                <br />
+                                <span className="text-green-500/70 text-sm">💡 书签将被追加到现有数据中,不会覆盖。</span>
+                            </p>
+                            <label className="flex items-center space-x-2 px-6 py-3 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-lg transition-colors cursor-pointer">
+                                <FileText className="w-5 h-5 text-green-500" />
+                                <span className="text-green-500 font-semibold">选择书签文件</span>
+                                <input
+                                    type="file"
+                                    accept=".html,.htm,.json"
+                                    onChange={handleImportBookmarks}
                                     className="hidden"
                                 />
                             </label>
