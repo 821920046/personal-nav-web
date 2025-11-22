@@ -597,15 +597,43 @@ export default function Admin() {
                 }
             }
 
-            // 导入书签
+            // 导入书签(带去重)
             let imported = 0;
+            let skipped = 0;
+
             for (const [categoryName, bookmarks] of parsedData.categories.entries()) {
                 const categoryId = categoryIdMap.get(categoryName);
                 if (!categoryId) continue;
 
                 for (const bookmark of bookmarks) {
                     setImportProgress({
-                        current: ++imported,
+                        current: imported + skipped + 1,
+                        total: totalBookmarks,
+                        status: `检查: ${bookmark.name}`,
+                    });
+
+                    // 检查URL是否已存在(去重)
+                    const { data: existingSite } = await supabase
+                        .from('sites')
+                        .select('id')
+                        .eq('user_id', user.id)
+                        .eq('url', bookmark.url)
+                        .single();
+
+                    if (existingSite) {
+                        // 网站已存在,跳过
+                        skipped++;
+                        setImportProgress({
+                            current: imported + skipped,
+                            total: totalBookmarks,
+                            status: `跳过重复: ${bookmark.name}`,
+                        });
+                        continue;
+                    }
+
+                    // 导入新网站
+                    setImportProgress({
+                        current: imported + skipped + 1,
                         total: totalBookmarks,
                         status: `导入: ${bookmark.name}`,
                     });
@@ -619,13 +647,15 @@ export default function Admin() {
                         visits: 0,
                         order_index: bookmarks.indexOf(bookmark),
                     });
+
+                    imported++;
                 }
             }
 
-            // 处理未分类的书签
+            // 处理未分类的书签(带去重)
             if (parsedData.uncategorized.length > 0) {
                 setImportProgress({
-                    current: imported,
+                    current: imported + skipped,
                     total: totalBookmarks,
                     status: '创建"导入的书签"分类...',
                 });
@@ -643,7 +673,31 @@ export default function Admin() {
                 if (uncategorizedCategory) {
                     for (const bookmark of parsedData.uncategorized) {
                         setImportProgress({
-                            current: ++imported,
+                            current: imported + skipped + 1,
+                            total: totalBookmarks,
+                            status: `检查: ${bookmark.name}`,
+                        });
+
+                        // 检查URL是否已存在(去重)
+                        const { data: existingSite } = await supabase
+                            .from('sites')
+                            .select('id')
+                            .eq('user_id', user.id)
+                            .eq('url', bookmark.url)
+                            .single();
+
+                        if (existingSite) {
+                            skipped++;
+                            setImportProgress({
+                                current: imported + skipped,
+                                total: totalBookmarks,
+                                status: `跳过重复: ${bookmark.name}`,
+                            });
+                            continue;
+                        }
+
+                        setImportProgress({
+                            current: imported + skipped + 1,
                             total: totalBookmarks,
                             status: `导入: ${bookmark.name}`,
                         });
@@ -657,11 +711,13 @@ export default function Admin() {
                             visits: 0,
                             order_index: parsedData.uncategorized.indexOf(bookmark),
                         });
+
+                        imported++;
                     }
                 }
             }
 
-            alert(`成功导入 ${imported} 个书签!`);
+            alert(`成功导入 ${imported} 个书签!${skipped > 0 ? `\n跳过 ${skipped} 个重复网站` : ''}`);
             window.location.reload();
         } catch (error) {
             console.error('导入书签失败:', error);
