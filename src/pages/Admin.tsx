@@ -344,6 +344,7 @@ export default function Admin() {
                     name: editingSite.name,
                     url: editingSite.url,
                     logo: editingSite.logo,
+                    category_id: editingSite.category_id,
                 })
                 .eq('id', editingSite.id);
 
@@ -844,13 +845,14 @@ export default function Admin() {
 
                                 {editingSite && (
                                     <div className="mb-6 p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                                             <input
                                                 type="text"
                                                 value={editingSite.name}
                                                 onChange={(e) =>
                                                     setEditingSite({ ...editingSite, name: e.target.value })
                                                 }
+                                                placeholder="网站名称"
                                                 className="px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
                                             />
                                             <input
@@ -859,6 +861,7 @@ export default function Admin() {
                                                 onChange={(e) =>
                                                     setEditingSite({ ...editingSite, url: e.target.value })
                                                 }
+                                                placeholder="https://..."
                                                 className="px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
                                             />
                                             <input
@@ -867,8 +870,22 @@ export default function Admin() {
                                                 onChange={(e) =>
                                                     setEditingSite({ ...editingSite, logo: e.target.value })
                                                 }
+                                                placeholder="🔗"
                                                 className="px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
                                             />
+                                            <select
+                                                value={editingSite.category_id}
+                                                onChange={(e) =>
+                                                    setEditingSite({ ...editingSite, category_id: e.target.value })
+                                                }
+                                                className="px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
+                                            >
+                                                {categories.map((cat) => (
+                                                    <option key={cat.id} value={cat.id}>
+                                                        {cat.name}
+                                                    </option>
+                                                ))}
+                                            </select>
                                         </div>
                                         <div className="flex space-x-2">
                                             <button
