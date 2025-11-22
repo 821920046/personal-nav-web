@@ -302,7 +302,7 @@ export default function Home() {
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-4">
             {(activeCategory
               ? getSitesByCategory(activeCategory).sort((a, b) => b.visits - a.visits)
-              : getAllSitesSortedByVisits()
+              : getAllSitesSortedByVisits().filter(site => site.visits > 0)
             ).map((site) => (
               <button
                 key={site.id}
@@ -334,20 +334,22 @@ export default function Home() {
         </div>
 
         {/* 空状态 */}
-        {getNonEmptyCategories().length === 0 && (
-          <div className="text-center py-20">
-            <p className="text-green-500/50 text-lg">暂无导航数据</p>
-            {user && (
-              <button
-                onClick={() => navigate('/admin')}
-                className="mt-4 px-6 py-3 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-lg transition-colors"
-              >
-                前往管理后台添加
-              </button>
-            )}
-          </div>
-        )}
-      </main>
-    </div>
+        {
+          getNonEmptyCategories().length === 0 && (
+            <div className="text-center py-20">
+              <p className="text-green-500/50 text-lg">暂无导航数据</p>
+              {user && (
+                <button
+                  onClick={() => navigate('/admin')}
+                  className="mt-4 px-6 py-3 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-lg transition-colors"
+                >
+                  前往管理后台添加
+                </button>
+              )}
+            </div>
+          )
+        }
+      </main >
+    </div >
   );
 }
