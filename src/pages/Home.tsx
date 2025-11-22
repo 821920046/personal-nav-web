@@ -14,6 +14,8 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(0);
+  const [searchEngine, setSearchEngine] = useState('Google');
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
   // 加载进度条动画
   useEffect(() => {
@@ -101,14 +103,16 @@ export default function Home() {
     e.preventDefault();
     if (!searchQuery.trim()) return;
 
-    const searchEngines = {
-      google: `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`,
-      bing: `https://www.bing.com/search?q=${encodeURIComponent(searchQuery)}`,
-      baidu: `https://www.baidu.com/s?wd=${encodeURIComponent(searchQuery)}`,
+    const searchEngines: Record<string, string> = {
+      'Google': `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`,
+      '百度': `https://www.baidu.com/s?wd=${encodeURIComponent(searchQuery)}`,
+      'Bing': `https://www.bing.com/search?q=${encodeURIComponent(searchQuery)}`,
+      'github': `https://github.com/search?q=${encodeURIComponent(searchQuery)}`,
     };
 
-    const engine = settings?.default_search_engine || 'google';
-    window.open(searchEngines[engine as keyof typeof searchEngines], '_blank');
+    const url = searchEngines[searchEngine] || searchEngines['Google'];
+    window.open(url, '_blank');
+    setSearchQuery('');
   };
 
   // 获取最近访问的网站（仅登录用户）
@@ -164,9 +168,9 @@ export default function Home() {
       <MatrixRain />
 
       {/* 导航栏 */}
-      <nav className="relative z-10 bg-black/80 backdrop-blur-sm border-b border-green-500/30">
+      <nav className="relative z-10 bg-black/60 backdrop-blur-md border-b border-green-500/20">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
             <span className="text-2xl">{settings?.logo_content || '🌐'}</span>
             <h1 className="text-xl font-bold text-green-500">{settings?.site_title || '智能导航'}</h1>
           </div>
@@ -209,53 +213,77 @@ export default function Home() {
             )}
           </div>
         </div>
-      </nav>
 
-      {/* 主内容 */}
-      <main className="relative z-10 container mx-auto px-4 py-8">
-        {/* 搜索框 */}
-        <div className="max-w-2xl mx-auto mb-8">
-          <form onSubmit={handleSearch} className="relative">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="搜索..."
-              className="w-full px-6 py-3 bg-black/60 border border-green-500/30 rounded-full text-white placeholder-green-500/50 focus:outline-none focus:border-green-500 transition-colors"
-            />
-            <button
-              type="submit"
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-green-500/20 hover:bg-green-500/30 rounded-full transition-colors"
-            >
-              <Search className="w-5 h-5 text-green-500" />
-            </button>
-          </form>
-        </div>
-
-        {/* 分类导航栏 */}
-        <div className="sticky top-0 z-20 bg-black/80 backdrop-blur-sm border-y border-green-500/30 mb-8">
-          <div className="max-w-7xl mx-auto px-4 py-3">
-            <div className="flex items-center space-x-2 overflow-x-auto scrollbar-hide">
+        {/* 分类导航标签 */}
+        <div className="border-t border-green-500/10">
+          <div className="container mx-auto px-4">
+            <div className="flex items-center space-x-6 overflow-x-auto scrollbar-hide">
               <button
-                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                className="px-4 py-2 bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 rounded-lg transition-colors whitespace-nowrap text-green-400 font-semibold"
+                onClick={() => setActiveCategory(null)}
+                className="relative px-4 py-3 text-white/80 hover:text-white transition-colors whitespace-nowrap"
               >
-                🏠 Home
+                Home
+                {activeCategory === null && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-500" />
+                )}
               </button>
               {getNonEmptyCategories().map((category) => (
                 <button
                   key={category.id}
                   onClick={() => {
+                    setActiveCategory(category.id);
                     const element = document.getElementById(`category-${category.id}`);
                     element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                   }}
-                  className="px-4 py-2 bg-black/60 hover:bg-green-500/10 border border-green-500/30 hover:border-green-500 rounded-lg transition-colors whitespace-nowrap text-green-400"
+                  className="relative px-4 py-3 text-white/80 hover:text-white transition-colors whitespace-nowrap"
                 >
                   {category.name}
+                  {activeCategory === category.id && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-500" />
+                  )}
                 </button>
               ))}
             </div>
           </div>
+        </div>
+      </nav>
+
+      {/* 主内容 */}
+      <main className="relative z-10 container mx-auto px-4 py-8">
+        {/* 搜索框 */}
+        <div className="max-w-3xl mx-auto mb-12">
+          {/* 搜索引擎选择 */}
+          <div className="flex items-center justify-center space-x-4 mb-4">
+            {['Google', '百度', 'Bing', 'github'].map((engine) => (
+              <button
+                key={engine}
+                onClick={() => setSearchEngine(engine)}
+                className={`px-4 py-1.5 rounded-full text-sm transition-all ${searchEngine === engine
+                  ? 'bg-green-500 text-black font-semibold'
+                  : 'text-white/60 hover:text-white hover:bg-white/5'
+                  }`}
+              >
+                {engine}
+              </button>
+            ))}
+          </div>
+
+          {/* 搜索框 */}
+          <form onSubmit={handleSearch} className="relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={`${searchEngine} 搜索...`}
+              className="w-full px-6 py-4 bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl text-white placeholder-white/40 focus:outline-none focus:border-green-500 transition-colors text-lg"
+            />
+            <button
+              type="submit"
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-2.5 bg-green-500/20 hover:bg-green-500/30 rounded-xl transition-colors"
+            >
+              <Search className="w-6 h-6 text-green-500" />
+            </button>
+          </form>
         </div>
 
         {/* 最近访问（仅登录用户） */}
@@ -267,22 +295,27 @@ export default function Home() {
                 <button
                   key={site.id}
                   onClick={() => handleSiteClick(site)}
-                  className="group relative bg-black/60 border border-green-500/30 rounded-lg p-4 hover:border-green-500 hover:bg-green-500/10 transition-all"
+                  className="group relative bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-4 hover:bg-white/10 hover:border-green-500/50 transition-all"
                 >
-                  <div className="text-6xl mb-2 flex items-center justify-center">
+                  {/* 图标 */}
+                  <div className="flex items-center justify-center mb-2">
                     <img
                       src={`https://www.google.com/s2/favicons?domain=${new URL(site.url).hostname}&sz=64`}
                       alt={site.name}
-                      className="w-16 h-16"
+                      className="w-12 h-12 group-hover:scale-110 transition-transform"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none';
                         const emojiSpan = e.currentTarget.nextElementSibling as HTMLElement;
                         if (emojiSpan) emojiSpan.style.display = 'block';
                       }}
                     />
-                    <span className="hidden">{site.logo}</span>
+                    <span className="hidden text-5xl">{site.logo}</span>
                   </div>
-                  <p className="text-sm text-green-400 truncate">{site.name}</p>
+
+                  {/* 名称 */}
+                  <p className="text-sm text-white/80 truncate text-center group-hover:text-white transition-colors">{site.name}</p>
+
+                  {/* 访问次数徽章 */}
                   <span className="absolute top-2 right-2 bg-green-500 text-black text-xs px-2 py-1 rounded-full font-bold">
                     {site.visits}
                   </span>
@@ -296,28 +329,32 @@ export default function Home() {
         {getNonEmptyCategories().map((category) => (
           <div key={category.id} id={`category-${category.id}`} className="mb-12 scroll-mt-20">
             <h2 className="text-2xl font-bold text-green-500 mb-6">{category.name}</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-4">
               {getSitesByCategory(category.id).map((site) => (
                 <button
                   key={site.id}
                   onClick={() => handleSiteClick(site)}
-                  className="bg-black/60 border border-green-500/30 rounded-lg p-6 hover:border-green-500 hover:bg-green-500/10 transition-all group"
+                  className="group relative bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-5 hover:bg-white/10 hover:border-green-500/50 transition-all"
                 >
-                  <div className="text-6xl mb-3 group-hover:scale-110 transition-transform flex items-center justify-center">
+                  {/* 图标 */}
+                  <div className="flex items-center justify-center mb-3">
                     <img
                       src={`https://www.google.com/s2/favicons?domain=${new URL(site.url).hostname}&sz=64`}
                       alt={site.name}
-                      className="w-16 h-16"
+                      className="w-12 h-12 group-hover:scale-110 transition-transform"
                       onError={(e) => {
-                        // fallback 到 emoji
                         e.currentTarget.style.display = 'none';
                         const emojiSpan = e.currentTarget.nextElementSibling as HTMLElement;
                         if (emojiSpan) emojiSpan.style.display = 'block';
                       }}
                     />
-                    <span className="hidden">{site.logo}</span>
+                    <span className="hidden text-5xl">{site.logo}</span>
                   </div>
-                  <p className="text-sm text-green-400 truncate">{site.name}</p>
+
+                  {/* 名称 */}
+                  <p className="text-sm text-white/80 text-center truncate group-hover:text-white transition-colors">
+                    {site.name}
+                  </p>
                 </button>
               ))}
             </div>
