@@ -232,6 +232,32 @@ export default function Home() {
           </form>
         </div>
 
+        {/* 分类导航栏 */}
+        <div className="sticky top-0 z-20 bg-black/80 backdrop-blur-sm border-y border-green-500/30 mb-8">
+          <div className="max-w-7xl mx-auto px-4 py-3">
+            <div className="flex items-center space-x-2 overflow-x-auto scrollbar-hide">
+              <button
+                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                className="px-4 py-2 bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 rounded-lg transition-colors whitespace-nowrap text-green-400 font-semibold"
+              >
+                🏠 Home
+              </button>
+              {getNonEmptyCategories().map((category) => (
+                <button
+                  key={category.id}
+                  onClick={() => {
+                    const element = document.getElementById(`category-${category.id}`);
+                    element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }}
+                  className="px-4 py-2 bg-black/60 hover:bg-green-500/10 border border-green-500/30 hover:border-green-500 rounded-lg transition-colors whitespace-nowrap text-green-400"
+                >
+                  {category.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
         {/* 最近访问（仅登录用户） */}
         {user && getRecentSites().length > 0 && (
           <div className="mb-12">
@@ -268,7 +294,7 @@ export default function Home() {
 
         {/* 所有分类 */}
         {getNonEmptyCategories().map((category) => (
-          <div key={category.id} className="mb-12">
+          <div key={category.id} id={`category-${category.id}`} className="mb-12 scroll-mt-20">
             <h2 className="text-2xl font-bold text-green-500 mb-6">{category.name}</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
               {getSitesByCategory(category.id).map((site) => (
