@@ -49,10 +49,6 @@ export default function Home() {
         site_title: '智能导航网站',
         logo_type: 'url',
         logo_content: '🌐',
-        province: '北京市',
-        city: '北京',
-        temperature: '20°C',
-        weather_condition: '晴',
         default_search_engine: 'google',
         created_at: '',
         updated_at: '',
@@ -66,13 +62,7 @@ export default function Home() {
           .maybeSingle();
 
         if (settingsData) {
-          // 如果有设置数据，但某些字段为空，使用默认值填充
-          setSettings({
-            ...settingsData,
-            city: settingsData.city || defaultSettings.city,
-            temperature: settingsData.temperature || defaultSettings.temperature,
-            weather_condition: settingsData.weather_condition || defaultSettings.weather_condition,
-          });
+          setSettings(settingsData);
         } else {
           setSettings(defaultSettings);
         }
@@ -195,13 +185,6 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
-            {/* 天气和日期 */}
-            <div className="hidden md:flex items-center space-x-2 text-sm text-green-400">
-              <span>{settings?.city}</span>
-              <span className="text-green-500/50">|</span>
-              <span>{settings?.temperature}</span>
-              <span>{settings?.weather_condition}</span>
-            </div>
 
             {user && (
               <>
