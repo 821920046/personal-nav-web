@@ -142,6 +142,7 @@ export default function Admin() {
     const [settings, setSettings] = useState<Settings | null>(null);
     const [settingsForm, setSettingsForm] = useState({
         site_title: '',
+        logo_type: 'emoji' as 'emoji' | 'url' | 'upload',
         logo_content: '',
         default_search_engine: 'google',
     });
@@ -198,9 +199,11 @@ export default function Admin() {
                 setSettings(settingsData);
                 setSettingsForm({
                     site_title: settingsData.site_title,
+                    logo_type: settingsData.logo_type,
                     logo_content: settingsData.logo_content,
                     default_search_engine: settingsData.default_search_engine,
                 });
+                setLogoType(settingsData.logo_type);
             } else {
                 const defaultSettings: Settings = {
                     id: '',
@@ -215,9 +218,11 @@ export default function Admin() {
                 setSettings(defaultSettings);
                 setSettingsForm({
                     site_title: defaultSettings.site_title,
+                    logo_type: defaultSettings.logo_type,
                     logo_content: defaultSettings.logo_content,
                     default_search_engine: defaultSettings.default_search_engine,
                 });
+                setLogoType(defaultSettings.logo_type);
             }
         } catch (error) {
             console.error('加载数据失败:', error);
@@ -431,6 +436,7 @@ export default function Admin() {
                 .upsert({
                     user_id: user.id,
                     site_title: settingsForm.site_title,
+                    logo_type: logoType,
                     logo_content: settingsForm.logo_content,
                     default_search_engine: settingsForm.default_search_engine,
                     updated_at: new Date().toISOString(),
