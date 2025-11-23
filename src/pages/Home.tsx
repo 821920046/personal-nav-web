@@ -42,29 +42,43 @@ export default function Home() {
     setLoading(true);
     try {
       // 加载设置（游客使用默认设置）
+      // 加载设置（游客使用默认设置）
+      const defaultSettings: Settings = {
+        id: '',
+        user_id: user?.id || '',
+        site_title: '智能导航网站',
+        logo_type: 'url',
+        logo_content: '🌐',
+        province: '北京市',
+        city: '北京',
+        temperature: '20°C',
+        weather_condition: '晴',
+        default_search_engine: 'google',
+        created_at: '',
+        updated_at: '',
+      };
+
       if (user) {
         const { data: settingsData } = await supabase
           .from('settings')
           .select('*')
           .eq('user_id', user.id)
-          .single();
-        setSettings(settingsData);
+          .maybeSingle();
+
+        if (settingsData) {
+          // 如果有设置数据，但某些字段为空，使用默认值填充
+          setSettings({
+            ...settingsData,
+            city: settingsData.city || defaultSettings.city,
+            temperature: settingsData.temperature || defaultSettings.temperature,
+            weather_condition: settingsData.weather_condition || defaultSettings.weather_condition,
+          });
+        } else {
+          setSettings(defaultSettings);
+        }
       } else {
         // 游客默认设置
-        setSettings({
-          id: '',
-          user_id: '',
-          site_title: '智能导航网站',
-          logo_type: 'url',
-          logo_content: '🌐',
-          province: '北京市',
-          city: '北京',
-          temperature: '20°C',
-          weather_condition: '晴',
-          default_search_engine: 'google',
-          created_at: '',
-          updated_at: '',
-        });
+        setSettings(defaultSettings);
       }
 
       // 加载分类和网站（显示所有公开数据或用户数据）
