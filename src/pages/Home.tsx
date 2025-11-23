@@ -180,7 +180,20 @@ export default function Home() {
       <nav className="relative z-10 bg-black/60 backdrop-blur-md border-b border-green-500/20">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-2">
           <div className="flex items-center space-x-2 min-w-0">
-            <span className="text-2xl flex-shrink-0">{settings?.logo_content || '🌐'}</span>
+            {settings?.logo_type === 'emoji' || !settings?.logo_content ? (
+              <span className="text-2xl flex-shrink-0">{settings?.logo_content || '🌐'}</span>
+            ) : (
+              <img
+                src={settings.logo_content}
+                alt="Site Logo"
+                className="w-8 h-8 object-contain rounded-sm"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                }}
+              />
+            )}
+            <span className="hidden text-2xl flex-shrink-0">🌐</span>
             <h1 className="text-lg md:text-xl font-bold text-green-500 truncate">{settings?.site_title || '智能导航'}</h1>
           </div>
 
