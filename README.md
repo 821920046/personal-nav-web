@@ -2,7 +2,7 @@
 
 一个功能强大的全栈导航网站,支持书签管理、分类组织和智能导入。基于 React + TypeScript + Supabase 构建,部署在 Cloudflare Pages。
 
-![Version](https://img.shields.io/badge/version-4.0.1-green)
+![Version](https://img.shields.io/badge/version-4.1.0-green)
 ![Build](https://img.shields.io/badge/build-passing-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
@@ -199,10 +199,6 @@ npm run build
 - site_title: text (网站标题)
 - logo_type: text (logo 类型)
 - logo_content: text (logo 内容)
-- province: text (省份)
-- city: text (城市)
-- temperature: text (温度)
-- weather_condition: text (天气)
 - default_search_engine: text (默认搜索引擎)
 - created_at: timestamp
 - updated_at: timestamp
@@ -217,6 +213,12 @@ npm run build
 - ✅ HTTPS 加密传输
 
 ## 📝 更新日志
+
+### v4.1.0 (2025-11-23)
+- ✂️ 删除天气功能(前端显示和后台配置)
+- 🛠️ 精简代码结构,移除~300行无用代码
+- ✨ 优化系统性能和加载速度
+- 📝 更新文档和数据库结构
 
 ### v4.0.1 (2025-11-23)
 - ✨ 新增前端顶部导航栏(Home + 分类快速跳转)
