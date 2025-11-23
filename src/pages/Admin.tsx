@@ -661,181 +661,168 @@ export default function Admin() {
                 throw new Error('文件中没有找到书签');
             }
 
-            setImportProgress({ current: 0, total: totalBookmarks, status: '检查分类...' });
+            setImportProgress({ current: 0, total: totalBookmarks, status: '正在处理分类...' });
 
-            // 创建分类映射(智能匹配已有分类)
+            // 1. 准备分类数据
+            const categoryNames = Array.from(parsedData.categories.keys());
             const categoryIdMap = new Map<string, string>();
-            let categoryIndex = categories.length;
 
-            for (const [categoryName] of parsedData.categories.entries()) {
-                // 先查找是否已存在同名分类(不区分大小写)
-                const existingCategory = categories.find(
-                    (cat) => cat.name.toLowerCase() === categoryName.toLowerCase()
-                );
+            // 获取现有分类
+            const { data: existingCategories } = await supabase
+                .from('categories')
+                .select('id, name')
+                .eq('user_id', user.id);
 
-                if (existingCategory) {
-                    // 使用已有分类
-                    categoryIdMap.set(categoryName, existingCategory.id);
-                    setImportProgress({
-                        current: 0,
-                        total: totalBookmarks,
-                        status: `复用分类: ${categoryName}`,
-                    });
-                } else {
-                    // 创建新分类
-                    setImportProgress({
-                        current: 0,
-                        total: totalBookmarks,
-                        status: `创建分类: ${categoryName}`,
-                    });
+            const existingCategoryMap = new Map(
+                existingCategories?.map(c => [c.name.toLowerCase(), c.id]) || []
+            );
 
-                    const { data: newCategory } = await supabase
-                        .from('categories')
-                        .insert({
-                            user_id: user.id,
-                            name: categoryName,
-                            order_index: categoryIndex++,
-                        })
-                        .select()
-                        .single();
+            // 找出需要新建的分类
+            const categoriesToCreate = categoryNames.filter(
+                name => !existingCategoryMap.has(name.toLowerCase())
+            );
 
-                    if (newCategory) {
-                        categoryIdMap.set(categoryName, newCategory.id);
-                    }
-                }
+            // 批量创建新分类
+            if (categoriesToCreate.length > 0) {
+                let nextOrderIndex = (existingCategories?.length || 0);
+                const newCategoriesData = categoriesToCreate.map(name => ({
+                    user_id: user.id,
+                    name: name,
+                    order_index: nextOrderIndex++,
+                }));
+
+                const { data: createdCategories, error: createCatError } = await supabase
+                    .from('categories')
+                    .insert(newCategoriesData)
+                    .select();
+
+                if (createCatError) throw createCatError;
+
+                // 更新 ID 映射
+                createdCategories?.forEach(cat => {
+                    categoryIdMap.set(cat.name, cat.id);
+                });
             }
 
-            // 导入书签(带去重)
-            let imported = 0;
-            let skipped = 0;
+            // 合并现有分类 ID
+            categoryNames.forEach(name => {
+                if (existingCategoryMap.has(name.toLowerCase())) {
+                    categoryIdMap.set(name, existingCategoryMap.get(name.toLowerCase())!);
+                }
+            });
 
+            // 2. 准备书签数据
+            setImportProgress({ current: 0, total: totalBookmarks, status: '正在检查重复...' });
+
+            // 获取现有所有 URL 用于去重
+            const { data: existingSites } = await supabase
+                .from('sites')
+                .select('url')
+                .eq('user_id', user.id);
+
+            const existingUrls = new Set(existingSites?.map(s => s.url) || []);
+            const sitesToInsert: any[] = [];
+            let skippedCount = 0;
+
+            // 处理分类书签
             for (const [categoryName, bookmarks] of parsedData.categories.entries()) {
                 const categoryId = categoryIdMap.get(categoryName);
                 if (!categoryId) continue;
 
-                for (const bookmark of bookmarks) {
-                    setImportProgress({
-                        current: imported + skipped + 1,
-                        total: totalBookmarks,
-                        status: `检查: ${bookmark.name}`,
-                    });
-
-                    // 检查URL是否已存在(去重)
-                    const { data: existingSite } = await supabase
-                        .from('sites')
-                        .select('id')
-                        .eq('user_id', user.id)
-                        .eq('url', bookmark.url)
-                        .single();
-
-                    if (existingSite) {
-                        // 网站已存在,跳过
-                        skipped++;
-                        setImportProgress({
-                            current: imported + skipped,
-                            total: totalBookmarks,
-                            status: `跳过重复: ${bookmark.name}`,
-                        });
-                        continue;
-                    }
-
-                    // 导入新网站
-                    setImportProgress({
-                        current: imported + skipped + 1,
-                        total: totalBookmarks,
-                        status: `导入: ${bookmark.name}`,
-                    });
-
-                    await supabase.from('sites').insert({
-                        user_id: user.id,
-                        category_id: categoryId,
-                        name: bookmark.name,
-                        url: bookmark.url,
-                        logo: getEmojiForUrl(bookmark.url),
-                        visits: 0,
-                        order_index: bookmarks.indexOf(bookmark),
-                    });
-
-                    imported++;
-                }
-            }
-
-            // 处理未分类的书签(带去重)
-            if (parsedData.uncategorized.length > 0) {
-                setImportProgress({
-                    current: imported + skipped,
-                    total: totalBookmarks,
-                    status: '创建"导入的书签"分类...',
-                });
-
-                const { data: uncategorizedCategory } = await supabase
-                    .from('categories')
-                    .insert({
-                        user_id: user.id,
-                        name: '导入的书签',
-                        order_index: categoryIndex,
-                    })
-                    .select()
-                    .single();
-
-                if (uncategorizedCategory) {
-                    for (const bookmark of parsedData.uncategorized) {
-                        setImportProgress({
-                            current: imported + skipped + 1,
-                            total: totalBookmarks,
-                            status: `检查: ${bookmark.name}`,
-                        });
-
-                        // 检查URL是否已存在(去重)
-                        const { data: existingSite } = await supabase
-                            .from('sites')
-                            .select('id')
-                            .eq('user_id', user.id)
-                            .eq('url', bookmark.url)
-                            .single();
-
-                        if (existingSite) {
-                            skipped++;
-                            setImportProgress({
-                                current: imported + skipped,
-                                total: totalBookmarks,
-                                status: `跳过重复: ${bookmark.name}`,
-                            });
-                            continue;
-                        }
-
-                        setImportProgress({
-                            current: imported + skipped + 1,
-                            total: totalBookmarks,
-                            status: `导入: ${bookmark.name}`,
-                        });
-
-                        await supabase.from('sites').insert({
+                bookmarks.forEach((bookmark, index) => {
+                    if (existingUrls.has(bookmark.url)) {
+                        skippedCount++;
+                    } else {
+                        sitesToInsert.push({
                             user_id: user.id,
-                            category_id: uncategorizedCategory.id,
+                            category_id: categoryId,
                             name: bookmark.name,
                             url: bookmark.url,
                             logo: getEmojiForUrl(bookmark.url),
                             visits: 0,
-                            order_index: parsedData.uncategorized.indexOf(bookmark),
+                            order_index: index, // 保持原有顺序
                         });
-
-                        imported++;
+                        existingUrls.add(bookmark.url); // 防止文件内部重复
                     }
+                });
+            }
+
+            // 处理未分类书签 (如果有)
+            if (parsedData.uncategorized.length > 0) {
+                // 查找或创建"导入的书签"分类
+                let uncategorizedId = existingCategoryMap.get('导入的书签');
+
+                if (!uncategorizedId) {
+                    const { data: newCat } = await supabase
+                        .from('categories')
+                        .insert({
+                            user_id: user.id,
+                            name: '导入的书签',
+                            order_index: (existingCategories?.length || 0) + categoriesToCreate.length,
+                        })
+                        .select()
+                        .single();
+                    if (newCat) uncategorizedId = newCat.id;
+                }
+
+                if (uncategorizedId) {
+                    parsedData.uncategorized.forEach((bookmark, index) => {
+                        if (existingUrls.has(bookmark.url)) {
+                            skippedCount++;
+                        } else {
+                            sitesToInsert.push({
+                                user_id: user.id,
+                                category_id: uncategorizedId,
+                                name: bookmark.name,
+                                url: bookmark.url,
+                                logo: getEmojiForUrl(bookmark.url),
+                                visits: 0,
+                                order_index: index,
+                            });
+                            existingUrls.add(bookmark.url);
+                        }
+                    });
                 }
             }
 
-            alert(`成功导入 ${imported} 个书签!${skipped > 0 ? `\n跳过 ${skipped} 个重复网站` : ''}`);
+            // 3. 批量插入书签
+            if (sitesToInsert.length > 0) {
+                setImportProgress({
+                    current: skippedCount,
+                    total: totalBookmarks,
+                    status: `正在导入 ${sitesToInsert.length} 个书签...`
+                });
+
+                // 分批插入，防止请求包过大 (每批 50 个)
+                const batchSize = 50;
+                for (let i = 0; i < sitesToInsert.length; i += batchSize) {
+                    const batch = sitesToInsert.slice(i, i + batchSize);
+                    const { error: insertError } = await supabase
+                        .from('sites')
+                        .insert(batch);
+
+                    if (insertError) throw insertError;
+
+                    setImportProgress({
+                        current: skippedCount + Math.min(i + batchSize, sitesToInsert.length),
+                        total: totalBookmarks,
+                        status: `已导入 ${Math.min(i + batchSize, sitesToInsert.length)} / ${sitesToInsert.length} ...`
+                    });
+                }
+            }
+
+            alert(`导入完成！\n成功导入: ${sitesToInsert.length}\n跳过重复: ${skippedCount}`);
             window.location.reload();
+
         } catch (error) {
             console.error('导入书签失败:', error);
-            alert(`导入失败: ${error instanceof Error ? error.message : '未知错误'}`);
+            alert('导入书签失败，请检查文件格式或网络连接');
         } finally {
             setGlobalLoading(false);
-            setImportProgress(null);
             e.target.value = '';
         }
     };
+
 
     // 一键清除所有数据
     const handleClearAllData = async () => {
