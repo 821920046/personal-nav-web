@@ -36,19 +36,8 @@ export interface Settings {
   site_title: string;
   logo_type: 'url' | 'upload';
   logo_content: string;
-  province: string;
-  city: string;
-  temperature: string;
-  weather_condition: string;
   default_search_engine: string;
   created_at: string;
   updated_at: string;
 }
 
-export interface ChinaRegion {
-  id: number;
-  province: string;
-  city: string;
-  city_code: string;
-  created_at: string;
-}
