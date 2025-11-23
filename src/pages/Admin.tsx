@@ -33,8 +33,6 @@ import {
     FileText,
 } from 'lucide-react';
 import { parseHTMLBookmarks, parseJSONBookmarks, getEmojiForUrl } from '../lib/bookmarkParser';
-import { getProvinces, getCitiesByProvince, searchCities, type City } from '../lib/cities';
-import { getCachedWeatherData, type WeatherProvider } from '../lib/weather';
 
 // 可排序分类项组件
 function SortableCategory({ category, onEdit, onDelete }: any) {
@@ -145,9 +143,6 @@ export default function Admin() {
     const [settingsForm, setSettingsForm] = useState({
         site_title: '',
         logo_content: '',
-        city: '',
-        temperature: '',
-        weather_condition: '',
         default_search_engine: 'google',
     });
 
@@ -155,15 +150,7 @@ export default function Admin() {
     const [logoType, setLogoType] = useState<'emoji' | 'url' | 'upload'>('emoji');
     const [logoPreview, setLogoPreview] = useState('');
 
-    // 城市选择相关
-    const [selectedProvince, setSelectedProvince] = useState('');
-    const [selectedCityCode, setSelectedCityCode] = useState('');
-    const [citySearchQuery, setCitySearchQuery] = useState('');
 
-    // 天气 API 相关
-    const [weatherProvider, setWeatherProvider] = useState<WeatherProvider>('qweather');
-    const [weatherApiKey, setWeatherApiKey] = useState('');
-    const [fetchingWeather, setFetchingWeather] = useState(false);
 
     // 拖拽传感器
     const sensors = useSensors(
@@ -212,23 +199,15 @@ export default function Admin() {
                 setSettingsForm({
                     site_title: settingsData.site_title,
                     logo_content: settingsData.logo_content,
-                    city: settingsData.city || '北京',
-                    temperature: settingsData.temperature || '20°C',
-                    weather_condition: settingsData.weather_condition || '晴',
                     default_search_engine: settingsData.default_search_engine,
                 });
             } else {
-                // 如果没有设置，初始化默认值
                 const defaultSettings: Settings = {
                     id: '',
                     user_id: user.id,
                     site_title: '智能导航网站',
                     logo_type: 'url',
                     logo_content: '🌐',
-                    province: '北京市',
-                    city: '北京',
-                    temperature: '20°C',
-                    weather_condition: '晴',
                     default_search_engine: 'google',
                     created_at: '',
                     updated_at: '',
@@ -237,9 +216,6 @@ export default function Admin() {
                 setSettingsForm({
                     site_title: defaultSettings.site_title,
                     logo_content: defaultSettings.logo_content,
-                    city: defaultSettings.city,
-                    temperature: defaultSettings.temperature,
-                    weather_condition: defaultSettings.weather_condition,
                     default_search_engine: defaultSettings.default_search_engine,
                 });
             }
@@ -456,9 +432,6 @@ export default function Admin() {
                     user_id: user.id,
                     site_title: settingsForm.site_title,
                     logo_content: settingsForm.logo_content,
-                    city: settingsForm.city,
-                    temperature: settingsForm.temperature,
-                    weather_condition: settingsForm.weather_condition,
                     default_search_engine: settingsForm.default_search_engine,
                     updated_at: new Date().toISOString(),
                 }, { onConflict: 'user_id' });
@@ -476,36 +449,7 @@ export default function Admin() {
         }
     };
 
-    // 处理城市选择并自动获取天气
-    const handleCityChange = async (cityCode: string, cityName: string) => {
-        if (!cityCode || !weatherApiKey) return;
 
-        setSelectedCityCode(cityCode);
-        setSettingsForm(prev => ({ ...prev, city: cityName }));
-        setFetchingWeather(true);
-
-        try {
-            const weatherData = await getCachedWeatherData(
-                weatherProvider,
-                cityCode,
-                cityName,
-                weatherApiKey
-            );
-
-            setSettingsForm(prev => ({
-                ...prev,
-                temperature: weatherData.temperature,
-                weather_condition: weatherData.condition,
-            }));
-
-            alert('天气数据获取成功！');
-        } catch (error) {
-            console.error('获取天气失败:', error);
-            alert('获取天气失败，请检查 API Key 是否正确');
-        } finally {
-            setFetchingWeather(false);
-        }
-    };
 
     // 处理 Logo 文件上传
     const handleLogoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -611,9 +555,6 @@ export default function Admin() {
                     .update({
                         site_title: data.settings.site_title,
                         logo_content: data.settings.logo_content,
-                        city: data.settings.city,
-                        temperature: data.settings.temperature,
-                        weather_condition: data.settings.weather_condition,
                         default_search_engine: data.settings.default_search_engine,
                     })
                     .eq('user_id', user.id);
@@ -1249,183 +1190,6 @@ export default function Admin() {
                                 )}
                             </div>
 
-                            {/* 天气 API 配置 */}
-                            <div className="p-4 bg-black/40 border border-green-500/20 rounded-lg space-y-4">
-                                <label className="block text-sm font-medium text-green-400">天气 API 配置</label>
-
-                                {/* API 提供商选择 */}
-                                <div>
-                                    <label className="block text-sm text-green-400/80 mb-2">选择天气服务</label>
-                                    <select
-                                        value={weatherProvider}
-                                        onChange={(e) => setWeatherProvider(e.target.value as WeatherProvider)}
-                                        className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
-                                    >
-                                        <option value="qweather">和风天气 (推荐)</option>
-                                        <option value="openweather">OpenWeather</option>
-                                        <option value="seniverse">心知天气</option>
-                                    </select>
-                                </div>
-
-                                {/* API Key 输入 */}
-                                <div>
-                                    <label className="block text-sm text-green-400/80 mb-2">API Key</label>
-                                    <input
-                                        type="text"
-                                        value={weatherApiKey}
-                                        onChange={(e) => setWeatherApiKey(e.target.value)}
-                                        placeholder="输入您的天气 API Key"
-                                        className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white placeholder-green-500/50 focus:outline-none focus:border-green-500"
-                                    />
-                                    <p className="text-green-500/50 text-xs mt-1">
-                                        {weatherProvider === 'qweather' && '获取 API Key: https://dev.qweather.com/'}
-                                        {weatherProvider === 'openweather' && '获取 API Key: https://openweathermap.org/api'}
-                                        {weatherProvider === 'seniverse' && '获取 API Key: https://www.seniverse.com/'}
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* 城市选择 */}
-                            <div className="p-4 bg-black/40 border border-green-500/20 rounded-lg space-y-4">
-                                <label className="block text-sm font-medium text-green-400">城市与天气</label>
-
-                                {/* 城市搜索 */}
-                                <div>
-                                    <label className="block text-sm text-green-400/80 mb-2">搜索城市</label>
-                                    <input
-                                        type="text"
-                                        value={citySearchQuery}
-                                        onChange={(e) => setCitySearchQuery(e.target.value)}
-                                        placeholder="输入城市名称搜索..."
-                                        className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white placeholder-green-500/50 focus:outline-none focus:border-green-500"
-                                    />
-                                </div>
-
-                                {/* 省份选择 */}
-                                {!citySearchQuery && (
-                                    <div>
-                                        <label className="block text-sm text-green-400/80 mb-2">选择省份</label>
-                                        <select
-                                            value={selectedProvince}
-                                            onChange={(e) => {
-                                                setSelectedProvince(e.target.value);
-                                                setSelectedCityCode('');
-                                            }}
-                                            className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
-                                        >
-                                            <option value="">请选择省份</option>
-                                            {getProvinces().map(province => (
-                                                <option key={province} value={province}>{province}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                )}
-
-                                {/* 城市选择 */}
-                                <div>
-                                    <label className="block text-sm text-green-400/80 mb-2">选择城市</label>
-                                    <select
-                                        value={selectedCityCode}
-                                        onChange={(e) => {
-                                            const cityCode = e.target.value;
-                                            const cities = citySearchQuery
-                                                ? searchCities(citySearchQuery)
-                                                : getCitiesByProvince(selectedProvince);
-                                            const city = cities.find(c => c.code === cityCode);
-                                            if (city) {
-                                                handleCityChange(city.code, city.name);
-                                            }
-                                        }}
-                                        disabled={!selectedProvince && !citySearchQuery}
-                                        className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500 disabled:opacity-50"
-                                    >
-                                        <option value="">请选择城市</option>
-                                        {(citySearchQuery
-                                            ? searchCities(citySearchQuery)
-                                            : getCitiesByProvince(selectedProvince)
-                                        ).map(city => (
-                                            <option key={city.code} value={city.code}>
-                                                {city.name} {citySearchQuery && `(${city.province})`}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                {/* 获取天气按钮 */}
-                                {selectedCityCode && weatherApiKey && (
-                                    <button
-                                        onClick={() => {
-                                            const cities = citySearchQuery
-                                                ? searchCities(citySearchQuery)
-                                                : getCitiesByProvince(selectedProvince);
-                                            const city = cities.find(c => c.code === selectedCityCode);
-                                            if (city) {
-                                                handleCityChange(city.code, city.name);
-                                            }
-                                        }}
-                                        disabled={fetchingWeather}
-                                        className="w-full px-4 py-2 bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 rounded-lg text-green-400 transition-colors disabled:opacity-50"
-                                    >
-                                        {fetchingWeather ? (
-                                            <span className="flex items-center justify-center">
-                                                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                                                获取天气中...
-                                            </span>
-                                        ) : (
-                                            '刷新天气数据'
-                                        )}
-                                    </button>
-                                )}
-
-                                {/* 当前天气显示 */}
-                                {settingsForm.city && (
-                                    <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
-                                        <p className="text-green-400 text-sm mb-1">当前设置：</p>
-                                        <p className="text-white">
-                                            {settingsForm.city} · {settingsForm.temperature} · {settingsForm.weather_condition}
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* 手动输入（备用） */}
-                            <div className="p-4 bg-black/40 border border-green-500/20 rounded-lg space-y-4">
-                                <label className="block text-sm font-medium text-green-400">手动输入（可选）</label>
-
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div>
-                                        <label className="block text-sm text-green-400/80 mb-2">城市</label>
-                                        <input
-                                            type="text"
-                                            value={settingsForm.city}
-                                            onChange={(e) => setSettingsForm({ ...settingsForm, city: e.target.value })}
-                                            className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm text-green-400/80 mb-2">温度</label>
-                                        <input
-                                            type="text"
-                                            value={settingsForm.temperature}
-                                            onChange={(e) =>
-                                                setSettingsForm({ ...settingsForm, temperature: e.target.value })
-                                            }
-                                            className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm text-green-400/80 mb-2">天气状况</label>
-                                        <input
-                                            type="text"
-                                            value={settingsForm.weather_condition}
-                                            onChange={(e) =>
-                                                setSettingsForm({ ...settingsForm, weather_condition: e.target.value })
-                                            }
-                                            className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
 
                             {/* 默认搜索引擎 */}
                             <div>
