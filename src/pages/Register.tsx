@@ -45,10 +45,6 @@ export default function Register() {
                     site_title: '智能导航网站',
                     logo_type: 'url',
                     logo_content: '🌐',
-                    province: '北京市',
-                    city: '北京',
-                    temperature: '20°C',
-                    weather_condition: '晴',
                     default_search_engine: 'google',
                 });
             }
