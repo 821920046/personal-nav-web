@@ -205,17 +205,42 @@ export default function Admin() {
                 .from('settings')
                 .select('*')
                 .eq('user_id', user.id)
-                .single();
+                .maybeSingle();
 
             if (settingsData) {
                 setSettings(settingsData);
                 setSettingsForm({
                     site_title: settingsData.site_title,
                     logo_content: settingsData.logo_content,
-                    city: settingsData.city,
-                    temperature: settingsData.temperature,
-                    weather_condition: settingsData.weather_condition,
+                    city: settingsData.city || '北京',
+                    temperature: settingsData.temperature || '20°C',
+                    weather_condition: settingsData.weather_condition || '晴',
                     default_search_engine: settingsData.default_search_engine,
+                });
+            } else {
+                // 如果没有设置，初始化默认值
+                const defaultSettings: Settings = {
+                    id: '',
+                    user_id: user.id,
+                    site_title: '智能导航网站',
+                    logo_type: 'url',
+                    logo_content: '🌐',
+                    province: '北京市',
+                    city: '北京',
+                    temperature: '20°C',
+                    weather_condition: '晴',
+                    default_search_engine: 'google',
+                    created_at: '',
+                    updated_at: '',
+                };
+                setSettings(defaultSettings);
+                setSettingsForm({
+                    site_title: defaultSettings.site_title,
+                    logo_content: defaultSettings.logo_content,
+                    city: defaultSettings.city,
+                    temperature: defaultSettings.temperature,
+                    weather_condition: defaultSettings.weather_condition,
+                    default_search_engine: defaultSettings.default_search_engine,
                 });
             }
         } catch (error) {
@@ -421,24 +446,28 @@ export default function Admin() {
 
     // 设置管理
     const handleSaveSettings = async () => {
-        if (!user || !settings) return;
+        if (!user) return;
 
         setLoading(true);
         try {
             const { error } = await supabase
                 .from('settings')
-                .update({
+                .upsert({
+                    user_id: user.id,
                     site_title: settingsForm.site_title,
                     logo_content: settingsForm.logo_content,
                     city: settingsForm.city,
                     temperature: settingsForm.temperature,
                     weather_condition: settingsForm.weather_condition,
                     default_search_engine: settingsForm.default_search_engine,
-                })
-                .eq('user_id', user.id);
+                    updated_at: new Date().toISOString(),
+                }, { onConflict: 'user_id' });
 
             if (error) throw error;
             alert('设置保存成功！');
+
+            // 重新加载数据以获取最新的 settings
+            loadData();
         } catch (error) {
             console.error('保存设置失败:', error);
             alert('保存设置失败');
@@ -1145,8 +1174,8 @@ export default function Admin() {
                                 <button
                                     onClick={() => setLogoType('emoji')}
                                     className={`px-4 py-2 rounded-lg transition-colors ${logoType === 'emoji'
-                                            ? 'bg-green-500 text-black font-semibold'
-                                            : 'bg-black/60 text-green-400 border border-green-500/30'
+                                        ? 'bg-green-500 text-black font-semibold'
+                                        : 'bg-black/60 text-green-400 border border-green-500/30'
                                         }`}
                                 >
                                     Emoji
@@ -1154,8 +1183,8 @@ export default function Admin() {
                                 <button
                                     onClick={() => setLogoType('url')}
                                     className={`px-4 py-2 rounded-lg transition-colors ${logoType === 'url'
-                                            ? 'bg-green-500 text-black font-semibold'
-                                            : 'bg-black/60 text-green-400 border border-green-500/30'
+                                        ? 'bg-green-500 text-black font-semibold'
+                                        : 'bg-black/60 text-green-400 border border-green-500/30'
                                         }`}
                                 >
                                     图床链接
@@ -1163,8 +1192,8 @@ export default function Admin() {
                                 <button
                                     onClick={() => setLogoType('upload')}
                                     className={`px-4 py-2 rounded-lg transition-colors ${logoType === 'upload'
-                                            ? 'bg-green-500 text-black font-semibold'
-                                            : 'bg-black/60 text-green-400 border border-green-500/30'
+                                        ? 'bg-green-500 text-black font-semibold'
+                                        : 'bg-black/60 text-green-400 border border-green-500/30'
                                         }`}
                                 >
                                     上传图片
