@@ -312,14 +312,33 @@ export default function Home() {
                 {/* 图标 */}
                 <div className="flex items-center justify-center mb-2 md:mb-3">
                   <img
-                    src={`https://api.iowen.cn/favicon/${new URL(site.url).hostname}.png`}
+                    src={`https://unavatar.io/${new URL(site.url).hostname}?fallback=false`}
                     alt={site.name}
                     className="w-10 h-10 md:w-12 md:h-12 group-hover:scale-110 transition-transform"
                     loading="lazy"
                     onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                      const emojiSpan = e.currentTarget.nextElementSibling as HTMLElement;
-                      if (emojiSpan) emojiSpan.style.display = 'flex';
+                      const img = e.currentTarget;
+                      const currentSrc = img.src;
+                      const hostname = new URL(site.url).hostname;
+
+                      // 5-tier fallback chain: unavatar -> icon.horse -> direct favicon -> Google -> emoji
+                      if (currentSrc.includes('unavatar.io')) {
+                        img.src = `https://icon.horse/icon/${hostname}`;
+                      } else if (currentSrc.includes('icon.horse')) {
+                        img.src = `https://${hostname}/favicon.ico`;
+                      } else if (currentSrc.includes('favicon.ico')) {
+                        img.src = `https://www.google.com/s2/favicons?domain=${hostname}&sz=128`;
+                      } else if (currentSrc.includes('google.com')) {
+                        img.src = `https://api.faviconkit.com/${hostname}/64`;
+                      } else {
+                        // All image sources failed - show emoji fallback
+                        img.style.display = 'none';
+                        const emojiSpan = img.nextElementSibling as HTMLElement;
+                        if (emojiSpan) {
+                          emojiSpan.classList.remove('hidden');
+                          emojiSpan.classList.add('flex');
+                        }
+                      }
                     }}
                   />
                   <span className="hidden text-3xl md:text-4xl items-center justify-center">{site.logo || '🌐'}</span>
@@ -350,7 +369,7 @@ export default function Home() {
             </div>
           )
         }
-      </main >
-    </div >
+      </main>
+    </div>
   );
 }
