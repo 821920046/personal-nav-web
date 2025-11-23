@@ -34,7 +34,7 @@ export interface Settings {
   id: string;
   user_id: string;
   site_title: string;
-  logo_type: 'url' | 'upload';
+  logo_type: 'url' | 'upload' | 'emoji';
   logo_content: string;
   default_search_engine: string;
   created_at: string;
