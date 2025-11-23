@@ -33,6 +33,8 @@ import {
     FileText,
 } from 'lucide-react';
 import { parseHTMLBookmarks, parseJSONBookmarks, getEmojiForUrl } from '../lib/bookmarkParser';
+import { getProvinces, getCitiesByProvince, searchCities, type City } from '../lib/cities';
+import { getCachedWeatherData, type WeatherProvider } from '../lib/weather';
 
 // 可排序分类项组件
 function SortableCategory({ category, onEdit, onDelete }: any) {
@@ -148,6 +150,20 @@ export default function Admin() {
         weather_condition: '',
         default_search_engine: 'google',
     });
+
+    // Logo 上传相关
+    const [logoType, setLogoType] = useState<'emoji' | 'url' | 'upload'>('emoji');
+    const [logoPreview, setLogoPreview] = useState('');
+
+    // 城市选择相关
+    const [selectedProvince, setSelectedProvince] = useState('');
+    const [selectedCityCode, setSelectedCityCode] = useState('');
+    const [citySearchQuery, setCitySearchQuery] = useState('');
+
+    // 天气 API 相关
+    const [weatherProvider, setWeatherProvider] = useState<WeatherProvider>('qweather');
+    const [weatherApiKey, setWeatherApiKey] = useState('');
+    const [fetchingWeather, setFetchingWeather] = useState(false);
 
     // 拖拽传感器
     const sensors = useSensors(
@@ -428,6 +444,69 @@ export default function Admin() {
             alert('保存设置失败');
         } finally {
             setLoading(false);
+        }
+    };
+
+    // 处理城市选择并自动获取天气
+    const handleCityChange = async (cityCode: string, cityName: string) => {
+        if (!cityCode || !weatherApiKey) return;
+
+        setSelectedCityCode(cityCode);
+        setSettingsForm(prev => ({ ...prev, city: cityName }));
+        setFetchingWeather(true);
+
+        try {
+            const weatherData = await getCachedWeatherData(
+                weatherProvider,
+                cityCode,
+                cityName,
+                weatherApiKey
+            );
+
+            setSettingsForm(prev => ({
+                ...prev,
+                temperature: weatherData.temperature,
+                weather_condition: weatherData.condition,
+            }));
+
+            alert('天气数据获取成功！');
+        } catch (error) {
+            console.error('获取天气失败:', error);
+            alert('获取天气失败，请检查 API Key 是否正确');
+        } finally {
+            setFetchingWeather(false);
+        }
+    };
+
+    // 处理 Logo 文件上传
+    const handleLogoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !user) return;
+
+        // 验证文件类型
+        if (!file.type.startsWith('image/')) {
+            alert('请选择图片文件');
+            return;
+        }
+
+        // 验证文件大小（最大 2MB）
+        if (file.size > 2 * 1024 * 1024) {
+            alert('图片大小不能超过 2MB');
+            return;
+        }
+
+        try {
+            // 创建预览
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const result = e.target?.result as string;
+                setLogoPreview(result);
+                setSettingsForm(prev => ({ ...prev, logo_content: result }));
+            };
+            reader.readAsDataURL(file);
+        } catch (error) {
+            console.error('处理图片失败:', error);
+            alert('处理图片失败');
         }
     };
 
@@ -1043,7 +1122,8 @@ export default function Admin() {
 
                 {/* 设置 */}
                 {activeTab === 'settings' && (
-                    <div className="max-w-2xl space-y-6">
+                    <div className="max-w-3xl space-y-6">
+                        {/* 网站标题 */}
                         <div>
                             <label className="block text-sm font-medium text-green-400 mb-2">网站标题</label>
                             <input
@@ -1056,52 +1136,279 @@ export default function Admin() {
                             />
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-green-400 mb-2">Logo (Emoji)</label>
-                            <input
-                                type="text"
-                                value={settingsForm.logo_content}
-                                onChange={(e) =>
-                                    setSettingsForm({ ...settingsForm, logo_content: e.target.value })
-                                }
-                                className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
-                            />
+                        {/* Logo 上传 */}
+                        <div className="p-4 bg-black/40 border border-green-500/20 rounded-lg">
+                            <label className="block text-sm font-medium text-green-400 mb-3">网站 Logo</label>
+
+                            {/* Logo 类型选择 */}
+                            <div className="flex gap-2 mb-4">
+                                <button
+                                    onClick={() => setLogoType('emoji')}
+                                    className={`px-4 py-2 rounded-lg transition-colors ${logoType === 'emoji'
+                                            ? 'bg-green-500 text-black font-semibold'
+                                            : 'bg-black/60 text-green-400 border border-green-500/30'
+                                        }`}
+                                >
+                                    Emoji
+                                </button>
+                                <button
+                                    onClick={() => setLogoType('url')}
+                                    className={`px-4 py-2 rounded-lg transition-colors ${logoType === 'url'
+                                            ? 'bg-green-500 text-black font-semibold'
+                                            : 'bg-black/60 text-green-400 border border-green-500/30'
+                                        }`}
+                                >
+                                    图床链接
+                                </button>
+                                <button
+                                    onClick={() => setLogoType('upload')}
+                                    className={`px-4 py-2 rounded-lg transition-colors ${logoType === 'upload'
+                                            ? 'bg-green-500 text-black font-semibold'
+                                            : 'bg-black/60 text-green-400 border border-green-500/30'
+                                        }`}
+                                >
+                                    上传图片
+                                </button>
+                            </div>
+
+                            {/* Emoji 输入 */}
+                            {logoType === 'emoji' && (
+                                <input
+                                    type="text"
+                                    value={settingsForm.logo_content}
+                                    onChange={(e) =>
+                                        setSettingsForm({ ...settingsForm, logo_content: e.target.value })
+                                    }
+                                    placeholder="输入 Emoji，如 🌐"
+                                    className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white placeholder-green-500/50 focus:outline-none focus:border-green-500"
+                                />
+                            )}
+
+                            {/* URL 输入 */}
+                            {logoType === 'url' && (
+                                <input
+                                    type="url"
+                                    value={settingsForm.logo_content}
+                                    onChange={(e) =>
+                                        setSettingsForm({ ...settingsForm, logo_content: e.target.value })
+                                    }
+                                    placeholder="https://example.com/logo.png"
+                                    className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white placeholder-green-500/50 focus:outline-none focus:border-green-500"
+                                />
+                            )}
+
+                            {/* 文件上传 */}
+                            {logoType === 'upload' && (
+                                <div>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleLogoFileChange}
+                                        className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-500 file:text-black file:font-semibold hover:file:bg-green-600"
+                                    />
+                                    <p className="text-green-500/50 text-xs mt-2">支持 JPG、PNG、GIF，最大 2MB</p>
+                                </div>
+                            )}
+
+                            {/* Logo 预览 */}
+                            {settingsForm.logo_content && (
+                                <div className="mt-4 p-4 bg-black/60 border border-green-500/30 rounded-lg">
+                                    <p className="text-green-400 text-sm mb-2">预览：</p>
+                                    {logoType === 'emoji' ? (
+                                        <span className="text-4xl">{settingsForm.logo_content}</span>
+                                    ) : (
+                                        <img
+                                            src={settingsForm.logo_content}
+                                            alt="Logo Preview"
+                                            className="w-16 h-16 object-contain"
+                                            onError={(e) => {
+                                                e.currentTarget.style.display = 'none';
+                                            }}
+                                        />
+                                    )}
+                                </div>
+                            )}
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-green-400 mb-2">城市</label>
-                            <input
-                                type="text"
-                                value={settingsForm.city}
-                                onChange={(e) => setSettingsForm({ ...settingsForm, city: e.target.value })}
-                                className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
-                            />
+                        {/* 天气 API 配置 */}
+                        <div className="p-4 bg-black/40 border border-green-500/20 rounded-lg space-y-4">
+                            <label className="block text-sm font-medium text-green-400">天气 API 配置</label>
+
+                            {/* API 提供商选择 */}
+                            <div>
+                                <label className="block text-sm text-green-400/80 mb-2">选择天气服务</label>
+                                <select
+                                    value={weatherProvider}
+                                    onChange={(e) => setWeatherProvider(e.target.value as WeatherProvider)}
+                                    className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
+                                >
+                                    <option value="qweather">和风天气 (推荐)</option>
+                                    <option value="openweather">OpenWeather</option>
+                                    <option value="seniverse">心知天气</option>
+                                </select>
+                            </div>
+
+                            {/* API Key 输入 */}
+                            <div>
+                                <label className="block text-sm text-green-400/80 mb-2">API Key</label>
+                                <input
+                                    type="text"
+                                    value={weatherApiKey}
+                                    onChange={(e) => setWeatherApiKey(e.target.value)}
+                                    placeholder="输入您的天气 API Key"
+                                    className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white placeholder-green-500/50 focus:outline-none focus:border-green-500"
+                                />
+                                <p className="text-green-500/50 text-xs mt-1">
+                                    {weatherProvider === 'qweather' && '获取 API Key: https://dev.qweather.com/'}
+                                    {weatherProvider === 'openweather' && '获取 API Key: https://openweathermap.org/api'}
+                                    {weatherProvider === 'seniverse' && '获取 API Key: https://www.seniverse.com/'}
+                                </p>
+                            </div>
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-green-400 mb-2">温度</label>
-                            <input
-                                type="text"
-                                value={settingsForm.temperature}
-                                onChange={(e) =>
-                                    setSettingsForm({ ...settingsForm, temperature: e.target.value })
-                                }
-                                className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
-                            />
+                        {/* 城市选择 */}
+                        <div className="p-4 bg-black/40 border border-green-500/20 rounded-lg space-y-4">
+                            <label className="block text-sm font-medium text-green-400">城市与天气</label>
+
+                            {/* 城市搜索 */}
+                            <div>
+                                <label className="block text-sm text-green-400/80 mb-2">搜索城市</label>
+                                <input
+                                    type="text"
+                                    value={citySearchQuery}
+                                    onChange={(e) => setCitySearchQuery(e.target.value)}
+                                    placeholder="输入城市名称搜索..."
+                                    className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white placeholder-green-500/50 focus:outline-none focus:border-green-500"
+                                />
+                            </div>
+
+                            {/* 省份选择 */}
+                            {!citySearchQuery && (
+                                <div>
+                                    <label className="block text-sm text-green-400/80 mb-2">选择省份</label>
+                                    <select
+                                        value={selectedProvince}
+                                        onChange={(e) => {
+                                            setSelectedProvince(e.target.value);
+                                            setSelectedCityCode('');
+                                        }}
+                                        className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
+                                    >
+                                        <option value="">请选择省份</option>
+                                        {getProvinces().map(province => (
+                                            <option key={province} value={province}>{province}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+
+                            {/* 城市选择 */}
+                            <div>
+                                <label className="block text-sm text-green-400/80 mb-2">选择城市</label>
+                                <select
+                                    value={selectedCityCode}
+                                    onChange={(e) => {
+                                        const cityCode = e.target.value;
+                                        const cities = citySearchQuery
+                                            ? searchCities(citySearchQuery)
+                                            : getCitiesByProvince(selectedProvince);
+                                        const city = cities.find(c => c.code === cityCode);
+                                        if (city) {
+                                            handleCityChange(city.code, city.name);
+                                        }
+                                    }}
+                                    disabled={!selectedProvince && !citySearchQuery}
+                                    className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500 disabled:opacity-50"
+                                >
+                                    <option value="">请选择城市</option>
+                                    {(citySearchQuery
+                                        ? searchCities(citySearchQuery)
+                                        : getCitiesByProvince(selectedProvince)
+                                    ).map(city => (
+                                        <option key={city.code} value={city.code}>
+                                            {city.name} {citySearchQuery && `(${city.province})`}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* 获取天气按钮 */}
+                            {selectedCityCode && weatherApiKey && (
+                                <button
+                                    onClick={() => {
+                                        const cities = citySearchQuery
+                                            ? searchCities(citySearchQuery)
+                                            : getCitiesByProvince(selectedProvince);
+                                        const city = cities.find(c => c.code === selectedCityCode);
+                                        if (city) {
+                                            handleCityChange(city.code, city.name);
+                                        }
+                                    }}
+                                    disabled={fetchingWeather}
+                                    className="w-full px-4 py-2 bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 rounded-lg text-green-400 transition-colors disabled:opacity-50"
+                                >
+                                    {fetchingWeather ? (
+                                        <span className="flex items-center justify-center">
+                                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                            获取天气中...
+                                        </span>
+                                    ) : (
+                                        '刷新天气数据'
+                                    )}
+                                </button>
+                            )}
+
+                            {/* 当前天气显示 */}
+                            {settingsForm.city && (
+                                <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+                                    <p className="text-green-400 text-sm mb-1">当前设置：</p>
+                                    <p className="text-white">
+                                        {settingsForm.city} · {settingsForm.temperature} · {settingsForm.weather_condition}
+                                    </p>
+                                </div>
+                            )}
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-green-400 mb-2">天气状况</label>
-                            <input
-                                type="text"
-                                value={settingsForm.weather_condition}
-                                onChange={(e) =>
-                                    setSettingsForm({ ...settingsForm, weather_condition: e.target.value })
-                                }
-                                className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
-                            />
+                        {/* 手动输入（备用） */}
+                        <div className="p-4 bg-black/40 border border-green-500/20 rounded-lg space-y-4">
+                            <label className="block text-sm font-medium text-green-400">手动输入（可选）</label>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label className="block text-sm text-green-400/80 mb-2">城市</label>
+                                    <input
+                                        type="text"
+                                        value={settingsForm.city}
+                                        onChange={(e) => setSettingsForm({ ...settingsForm, city: e.target.value })}
+                                        className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm text-green-400/80 mb-2">温度</label>
+                                    <input
+                                        type="text"
+                                        value={settingsForm.temperature}
+                                        onChange={(e) =>
+                                            setSettingsForm({ ...settingsForm, temperature: e.target.value })
+                                        }
+                                        className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm text-green-400/80 mb-2">天气状况</label>
+                                    <input
+                                        type="text"
+                                        value={settingsForm.weather_condition}
+                                        onChange={(e) =>
+                                            setSettingsForm({ ...settingsForm, weather_condition: e.target.value })
+                                        }
+                                        className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
+                                    />
+                                </div>
+                            </div>
                         </div>
 
+                        {/* 默认搜索引擎 */}
                         <div>
                             <label className="block text-sm font-medium text-green-400 mb-2">默认搜索引擎</label>
                             <select
@@ -1117,6 +1424,7 @@ export default function Admin() {
                             </select>
                         </div>
 
+                        {/* 保存按钮 */}
                         <button
                             onClick={handleSaveSettings}
                             disabled={loading}
