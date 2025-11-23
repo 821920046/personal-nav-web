@@ -174,13 +174,13 @@ export default function Home() {
 
       {/* 导航栏 */}
       <nav className="relative z-10 bg-black/60 backdrop-blur-md border-b border-green-500/20">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <span className="text-2xl">{settings?.logo_content || '🌐'}</span>
-            <h1 className="text-xl font-bold text-green-500">{settings?.site_title || '智能导航'}</h1>
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-2">
+          <div className="flex items-center space-x-2 min-w-0">
+            <span className="text-2xl flex-shrink-0">{settings?.logo_content || '🌐'}</span>
+            <h1 className="text-lg md:text-xl font-bold text-green-500 truncate">{settings?.site_title || '智能导航'}</h1>
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
             {/* 天气和日期 */}
             <div className="hidden md:flex items-center space-x-2 text-sm text-green-400">
               <span>{settings?.city}</span>
@@ -193,17 +193,17 @@ export default function Home() {
               <>
                 <button
                   onClick={() => navigate('/admin')}
-                  className="flex items-center space-x-2 px-4 py-2 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-lg transition-colors"
+                  className="flex items-center gap-1 md:gap-2 px-2 md:px-4 py-2 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-lg transition-colors text-sm"
                 >
                   <SettingsIcon className="w-4 h-4" />
-                  <span>管理</span>
+                  <span className="hidden sm:inline">管理</span>
                 </button>
                 <button
                   onClick={handleLogout}
-                  className="flex items-center space-x-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-lg transition-colors"
+                  className="flex items-center gap-1 md:gap-2 px-2 md:px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-lg transition-colors text-sm"
                 >
                   <LogOut className="w-4 h-4" />
-                  <span>退出</span>
+                  <span className="hidden sm:inline">退出</span>
                 </button>
               </>
             )}
@@ -211,7 +211,7 @@ export default function Home() {
             {!user && (
               <button
                 onClick={() => navigate('/login')}
-                className="px-4 py-2 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-lg transition-colors"
+                className="px-3 md:px-4 py-2 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-lg transition-colors text-sm"
               >
                 登录
               </button>
@@ -256,14 +256,14 @@ export default function Home() {
       {/* 主内容 */}
       <main className="relative z-10 container mx-auto px-4 py-8">
         {/* 搜索框 */}
-        <div className="max-w-3xl mx-auto mb-12">
+        <div className="max-w-3xl mx-auto mb-8 md:mb-12">
           {/* 搜索引擎选择 */}
-          <div className="flex items-center justify-center space-x-4 mb-4">
+          <div className="flex items-center justify-center gap-2 md:gap-4 mb-3 md:mb-4 overflow-x-auto scrollbar-hide px-4">
             {['Google', '百度', 'Bing', 'github'].map((engine) => (
               <button
                 key={engine}
                 onClick={() => setSearchEngine(engine)}
-                className={`px-4 py-1.5 rounded-full text-sm transition-all ${searchEngine === engine
+                className={`px-3 md:px-4 py-1.5 rounded-full text-sm whitespace-nowrap transition-all ${searchEngine === engine
                   ? 'bg-green-500 text-black font-semibold'
                   : 'text-white/60 hover:text-white hover:bg-white/5'
                   }`}
@@ -280,26 +280,26 @@ export default function Home() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={`${searchEngine} 搜索...`}
-              className="w-full px-6 py-4 bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl text-white placeholder-white/40 focus:outline-none focus:border-green-500 transition-colors text-lg"
+              className="w-full px-4 md:px-6 py-3 md:py-4 bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl text-white placeholder-white/40 focus:outline-none focus:border-green-500 transition-colors text-base md:text-lg"
             />
             <button
               type="submit"
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-2.5 bg-green-500/20 hover:bg-green-500/30 rounded-xl transition-colors"
+              className="absolute right-2 md:right-3 top-1/2 -translate-y-1/2 p-2 md:p-2.5 bg-green-500/20 hover:bg-green-500/30 rounded-xl transition-colors"
             >
-              <Search className="w-6 h-6 text-green-500" />
+              <Search className="w-5 h-5 md:w-6 md:h-6 text-green-500" />
             </button>
           </form>
         </div>
 
         {/* 最近访问(按访问次数排序,不显示次数徽章) */}
         <div className="mb-12">
-          <h2 className="text-2xl font-bold text-green-500 mb-6">
+          <h2 className="text-xl md:text-2xl font-bold text-green-500 mb-4 md:mb-6">
             {activeCategory ?
               categories.find(c => c.id === activeCategory)?.name || '最近访问' :
               '最近访问'
             }
           </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-3 md:gap-4">
             {(activeCategory
               ? getSitesByCategory(activeCategory).sort((a, b) => b.visits - a.visits)
               : getAllSitesSortedByVisits().filter(site => site.visits > 0)
@@ -307,25 +307,26 @@ export default function Home() {
               <button
                 key={site.id}
                 onClick={() => handleSiteClick(site)}
-                className="group relative bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-5 hover:bg-white/10 hover:border-green-500/50 transition-all"
+                className="group relative bg-white/5 backdrop-blur-md border border-white/10 rounded-xl md:rounded-2xl p-4 md:p-5 hover:bg-white/10 hover:border-green-500/50 transition-all active:scale-95"
               >
                 {/* 图标 */}
-                <div className="flex items-center justify-center mb-3">
+                <div className="flex items-center justify-center mb-2 md:mb-3">
                   <img
-                    src={`https://www.google.com/s2/favicons?domain=${new URL(site.url).hostname}&sz=64`}
+                    src={`https://api.iowen.cn/favicon/${new URL(site.url).hostname}.png`}
                     alt={site.name}
-                    className="w-12 h-12 group-hover:scale-110 transition-transform"
+                    className="w-10 h-10 md:w-12 md:h-12 group-hover:scale-110 transition-transform"
+                    loading="lazy"
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
                       const emojiSpan = e.currentTarget.nextElementSibling as HTMLElement;
-                      if (emojiSpan) emojiSpan.style.display = 'block';
+                      if (emojiSpan) emojiSpan.style.display = 'flex';
                     }}
                   />
-                  <span className="hidden text-5xl">{site.logo}</span>
+                  <span className="hidden text-3xl md:text-4xl items-center justify-center">{site.logo || '🌐'}</span>
                 </div>
 
                 {/* 名称 */}
-                <p className="text-sm text-white/80 text-center truncate group-hover:text-white transition-colors">
+                <p className="text-xs md:text-sm text-white/80 text-center truncate group-hover:text-white transition-colors">
                   {site.name}
                 </p>
               </button>
