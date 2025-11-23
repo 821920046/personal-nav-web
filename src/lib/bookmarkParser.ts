@@ -25,38 +25,55 @@ export function parseHTMLBookmarks(htmlContent: string): ParsedBookmarkData {
 
     // 递归解析书签文件夹和链接
     function parseFolder(element: Element, categoryName: string = '') {
-        const dt = element.querySelectorAll(':scope > DT');
+        const children = Array.from(element.children);
 
-        dt.forEach((item) => {
-            // 检查是否是文件夹
-            const h3 = item.querySelector('H3');
-            if (h3) {
-                const folderName = h3.textContent?.trim() || '未命名分类';
-                const dl = item.querySelector('DL');
-                if (dl) {
-                    parseFolder(dl, folderName);
-                }
-            } else {
-                // 这是一个书签链接
-                const a = item.querySelector('A') as HTMLAnchorElement;
-                if (a && a.href) {
-                    const bookmark: ParsedBookmark = {
-                        name: a.textContent?.trim() || '未命名',
-                        url: a.href,
-                        category: categoryName,
-                    };
+        for (let i = 0; i < children.length; i++) {
+            const item = children[i];
+            const tagName = item.tagName.toUpperCase();
 
-                    if (categoryName) {
-                        if (!result.categories.has(categoryName)) {
-                            result.categories.set(categoryName, []);
+            if (tagName === 'DT') {
+                // 检查是否是文件夹
+                const h3 = item.querySelector('H3');
+                if (h3) {
+                    const folderName = h3.textContent?.trim() || '未命名分类';
+
+                    // 查找包含内容的 DL 元素
+                    // 1. 尝试在 DT 内部查找
+                    let dl = item.querySelector('DL');
+
+                    // 2. 如果内部没有，尝试查找下一个兄弟元素 (Netscape 格式常见结构)
+                    if (!dl) {
+                        const nextSibling = item.nextElementSibling;
+                        if (nextSibling && nextSibling.tagName.toUpperCase() === 'DL') {
+                            dl = nextSibling;
                         }
-                        result.categories.get(categoryName)!.push(bookmark);
-                    } else {
-                        result.uncategorized.push(bookmark);
+                    }
+
+                    if (dl) {
+                        parseFolder(dl, folderName);
+                    }
+                } else {
+                    // 这是一个书签链接
+                    const a = item.querySelector('A') as HTMLAnchorElement;
+                    if (a && a.href) {
+                        const bookmark: ParsedBookmark = {
+                            name: a.textContent?.trim() || '未命名',
+                            url: a.href,
+                            category: categoryName,
+                        };
+
+                        if (categoryName) {
+                            if (!result.categories.has(categoryName)) {
+                                result.categories.set(categoryName, []);
+                            }
+                            result.categories.get(categoryName)!.push(bookmark);
+                        } else {
+                            result.uncategorized.push(bookmark);
+                        }
                     }
                 }
             }
-        });
+        }
     }
 
     // 从根 DL 元素开始解析
