@@ -630,6 +630,7 @@ export default function Admin() {
         }
     };
 
+
     // 书签导入
     const handleImportBookmarks = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -664,7 +665,7 @@ export default function Admin() {
             setImportProgress({ current: 0, total: totalBookmarks, status: '正在处理分类...' });
 
             // 1. 准备分类数据
-            const categoryNames = Array.from(parsedData.categories.keys());
+            const categoryNames = Array.from(parsedData.categories.keys()) as string[];
             const categoryIdMap = new Map<string, string>();
 
             // 获取现有分类
@@ -679,13 +680,13 @@ export default function Admin() {
 
             // 找出需要新建的分类
             const categoriesToCreate = categoryNames.filter(
-                name => !existingCategoryMap.has(name.toLowerCase())
+                (name: string) => !existingCategoryMap.has(name.toLowerCase())
             );
 
             // 批量创建新分类
             if (categoriesToCreate.length > 0) {
                 let nextOrderIndex = (existingCategories?.length || 0);
-                const newCategoriesData = categoriesToCreate.map(name => ({
+                const newCategoriesData = categoriesToCreate.map((name: string) => ({
                     user_id: user.id,
                     name: name,
                     order_index: nextOrderIndex++,
@@ -822,7 +823,6 @@ export default function Admin() {
             e.target.value = '';
         }
     };
-
 
     // 一键清除所有数据
     const handleClearAllData = async () => {
@@ -992,537 +992,542 @@ export default function Admin() {
                                 </div>
                             </SortableContext>
                         </DndContext>
-                    </div>
+                    </div >
                 )}
 
                 {/* 网站管理 */}
-                {activeTab === 'sites' && (
-                    <div className="max-w-3xl">
-                        <div className="mb-6">
-                            <label className="block text-sm font-medium text-green-400 mb-2">选择分类</label>
-                            <select
-                                value={selectedCategoryId}
-                                onChange={(e) => setSelectedCategoryId(e.target.value)}
-                                className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
-                            >
-                                <option value="">请选择分类</option>
-                                {categories.map((cat) => (
-                                    <option key={cat.id} value={cat.id}>
-                                        {cat.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        {selectedCategoryId && (
-                            <>
-                                <div className="mb-6 p-4 bg-black/60 border border-green-500/30 rounded-lg">
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                                        <input
-                                            type="text"
-                                            value={newSite.name}
-                                            onChange={(e) => setNewSite({ ...newSite, name: e.target.value })}
-                                            placeholder="网站名称"
-                                            className="px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white placeholder-green-500/50 focus:outline-none focus:border-green-500"
-                                        />
-                                        <input
-                                            type="url"
-                                            value={newSite.url}
-                                            onChange={(e) => setNewSite({ ...newSite, url: e.target.value })}
-                                            placeholder="https://..."
-                                            className="px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white placeholder-green-500/50 focus:outline-none focus:border-green-500"
-                                        />
-                                        <input
-                                            type="text"
-                                            value={newSite.logo}
-                                            onChange={(e) => setNewSite({ ...newSite, logo: e.target.value })}
-                                            placeholder="🔗"
-                                            className="px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white placeholder-green-500/50 focus:outline-none focus:border-green-500"
-                                        />
-                                    </div>
-                                    <button
-                                        onClick={handleAddSite}
-                                        disabled={loading}
-                                        className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-black font-semibold rounded-lg transition-colors disabled:opacity-50"
-                                    >
-                                        {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
-                                        <span>添加网站</span>
-                                    </button>
-                                </div>
-
-                                {editingSite && (
-                                    <div className="mb-6 p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
-                                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                                            <input
-                                                type="text"
-                                                value={editingSite.name}
-                                                onChange={(e) =>
-                                                    setEditingSite({ ...editingSite, name: e.target.value })
-                                                }
-                                                placeholder="网站名称"
-                                                className="px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
-                                            />
-                                            <input
-                                                type="url"
-                                                value={editingSite.url}
-                                                onChange={(e) =>
-                                                    setEditingSite({ ...editingSite, url: e.target.value })
-                                                }
-                                                placeholder="https://..."
-                                                className="px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
-                                            />
-                                            <input
-                                                type="text"
-                                                value={editingSite.logo}
-                                                onChange={(e) =>
-                                                    setEditingSite({ ...editingSite, logo: e.target.value })
-                                                }
-                                                placeholder="🔗"
-                                                className="px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
-                                            />
-                                            <select
-                                                value={editingSite.category_id}
-                                                onChange={(e) =>
-                                                    setEditingSite({ ...editingSite, category_id: e.target.value })
-                                                }
-                                                className="px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
-                                            >
-                                                {categories.map((cat) => (
-                                                    <option key={cat.id} value={cat.id}>
-                                                        {cat.name}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div className="flex space-x-2">
-                                            <button
-                                                onClick={handleUpdateSite}
-                                                disabled={loading}
-                                                className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-black font-semibold rounded-lg transition-colors"
-                                            >
-                                                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                                                <span>保存</span>
-                                            </button>
-                                            <button
-                                                onClick={() => setEditingSite(null)}
-                                                className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-500 rounded-lg transition-colors"
-                                            >
-                                                取消
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-
-                                <DndContext
-                                    sensors={sensors}
-                                    collisionDetection={closestCenter}
-                                    onDragEnd={handleDragEndSites}
-                                >
-                                    <SortableContext items={filteredSites} strategy={verticalListSortingStrategy}>
-                                        <div className="space-y-2">
-                                            {filteredSites.map((site) => (
-                                                <SortableSite
-                                                    key={site.id}
-                                                    site={site}
-                                                    onEdit={setEditingSite}
-                                                    onDelete={handleDeleteSite}
-                                                />
-                                            ))}
-                                        </div>
-                                    </SortableContext>
-                                </DndContext>
-                            </>
-                        )}
-                    </div>
-                )}
-
-                {/* 设置 */}
-                {activeTab === 'settings' && (
-                    <div className="max-w-3xl space-y-6">
-                        {/* 网站标题 */}
-                        <div>
-                            <label className="block text-sm font-medium text-green-400 mb-2">网站标题</label>
-                            <input
-                                type="text"
-                                value={settingsForm.site_title}
-                                onChange={(e) =>
-                                    setSettingsForm({ ...settingsForm, site_title: e.target.value })
-                                }
-                                className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
-                            />
-                        </div>
-
-                        {/* Logo 上传 */}
-                        <div className="p-4 bg-black/40 border border-green-500/20 rounded-lg">
-                            <label className="block text-sm font-medium text-green-400 mb-3">网站 Logo</label>
-
-                            {/* Logo 类型选择 */}
-                            <div className="flex gap-2 mb-4">
-                                <button
-                                    onClick={() => setLogoType('emoji')}
-                                    className={`px-4 py-2 rounded-lg transition-colors ${logoType === 'emoji'
-                                        ? 'bg-green-500 text-black font-semibold'
-                                        : 'bg-black/60 text-green-400 border border-green-500/30'
-                                        }`}
-                                >
-                                    Emoji
-                                </button>
-                                <button
-                                    onClick={() => setLogoType('url')}
-                                    className={`px-4 py-2 rounded-lg transition-colors ${logoType === 'url'
-                                        ? 'bg-green-500 text-black font-semibold'
-                                        : 'bg-black/60 text-green-400 border border-green-500/30'
-                                        }`}
-                                >
-                                    图床链接
-                                </button>
-                                <button
-                                    onClick={() => setLogoType('upload')}
-                                    className={`px-4 py-2 rounded-lg transition-colors ${logoType === 'upload'
-                                        ? 'bg-green-500 text-black font-semibold'
-                                        : 'bg-black/60 text-green-400 border border-green-500/30'
-                                        }`}
-                                >
-                                    上传图片
-                                </button>
-                            </div>
-
-                            {/* Emoji 输入 */}
-                            {logoType === 'emoji' && (
-                                <input
-                                    type="text"
-                                    value={settingsForm.logo_content}
-                                    onChange={(e) =>
-                                        setSettingsForm({ ...settingsForm, logo_content: e.target.value })
-                                    }
-                                    placeholder="输入 Emoji，如 🌐"
-                                    className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white placeholder-green-500/50 focus:outline-none focus:border-green-500"
-                                />
-                            )}
-
-                            {/* URL 输入 */}
-                            {logoType === 'url' && (
-                                <input
-                                    type="url"
-                                    value={settingsForm.logo_content}
-                                    onChange={(e) =>
-                                        setSettingsForm({ ...settingsForm, logo_content: e.target.value })
-                                    }
-                                    placeholder="https://example.com/logo.png"
-                                    className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white placeholder-green-500/50 focus:outline-none focus:border-green-500"
-                                />
-                            )}
-
-                            {/* 文件上传 */}
-                            {logoType === 'upload' && (
-                                <div>
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={handleLogoFileChange}
-                                        className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-500 file:text-black file:font-semibold hover:file:bg-green-600"
-                                    />
-                                    <p className="text-green-500/50 text-xs mt-2">支持 JPG、PNG、GIF，最大 2MB</p>
-                                </div>
-                            )}
-
-                            {/* Logo 预览 */}
-                            {settingsForm.logo_content && (
-                                <div className="mt-4 p-4 bg-black/60 border border-green-500/30 rounded-lg">
-                                    <p className="text-green-400 text-sm mb-2">预览：</p>
-                                    {logoType === 'emoji' ? (
-                                        <span className="text-4xl">{settingsForm.logo_content}</span>
-                                    ) : (
-                                        <img
-                                            src={settingsForm.logo_content}
-                                            alt="Logo Preview"
-                                            className="w-16 h-16 object-contain"
-                                            onError={(e) => {
-                                                e.currentTarget.style.display = 'none';
-                                            }}
-                                        />
-                                    )}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* 天气 API 配置 */}
-                        <div className="p-4 bg-black/40 border border-green-500/20 rounded-lg space-y-4">
-                            <label className="block text-sm font-medium text-green-400">天气 API 配置</label>
-
-                            {/* API 提供商选择 */}
-                            <div>
-                                <label className="block text-sm text-green-400/80 mb-2">选择天气服务</label>
+                {
+                    activeTab === 'sites' && (
+                        <div className="max-w-3xl">
+                            <div className="mb-6">
+                                <label className="block text-sm font-medium text-green-400 mb-2">选择分类</label>
                                 <select
-                                    value={weatherProvider}
-                                    onChange={(e) => setWeatherProvider(e.target.value as WeatherProvider)}
+                                    value={selectedCategoryId}
+                                    onChange={(e) => setSelectedCategoryId(e.target.value)}
                                     className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
                                 >
-                                    <option value="qweather">和风天气 (推荐)</option>
-                                    <option value="openweather">OpenWeather</option>
-                                    <option value="seniverse">心知天气</option>
-                                </select>
-                            </div>
-
-                            {/* API Key 输入 */}
-                            <div>
-                                <label className="block text-sm text-green-400/80 mb-2">API Key</label>
-                                <input
-                                    type="text"
-                                    value={weatherApiKey}
-                                    onChange={(e) => setWeatherApiKey(e.target.value)}
-                                    placeholder="输入您的天气 API Key"
-                                    className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white placeholder-green-500/50 focus:outline-none focus:border-green-500"
-                                />
-                                <p className="text-green-500/50 text-xs mt-1">
-                                    {weatherProvider === 'qweather' && '获取 API Key: https://dev.qweather.com/'}
-                                    {weatherProvider === 'openweather' && '获取 API Key: https://openweathermap.org/api'}
-                                    {weatherProvider === 'seniverse' && '获取 API Key: https://www.seniverse.com/'}
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* 城市选择 */}
-                        <div className="p-4 bg-black/40 border border-green-500/20 rounded-lg space-y-4">
-                            <label className="block text-sm font-medium text-green-400">城市与天气</label>
-
-                            {/* 城市搜索 */}
-                            <div>
-                                <label className="block text-sm text-green-400/80 mb-2">搜索城市</label>
-                                <input
-                                    type="text"
-                                    value={citySearchQuery}
-                                    onChange={(e) => setCitySearchQuery(e.target.value)}
-                                    placeholder="输入城市名称搜索..."
-                                    className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white placeholder-green-500/50 focus:outline-none focus:border-green-500"
-                                />
-                            </div>
-
-                            {/* 省份选择 */}
-                            {!citySearchQuery && (
-                                <div>
-                                    <label className="block text-sm text-green-400/80 mb-2">选择省份</label>
-                                    <select
-                                        value={selectedProvince}
-                                        onChange={(e) => {
-                                            setSelectedProvince(e.target.value);
-                                            setSelectedCityCode('');
-                                        }}
-                                        className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
-                                    >
-                                        <option value="">请选择省份</option>
-                                        {getProvinces().map(province => (
-                                            <option key={province} value={province}>{province}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                            )}
-
-                            {/* 城市选择 */}
-                            <div>
-                                <label className="block text-sm text-green-400/80 mb-2">选择城市</label>
-                                <select
-                                    value={selectedCityCode}
-                                    onChange={(e) => {
-                                        const cityCode = e.target.value;
-                                        const cities = citySearchQuery
-                                            ? searchCities(citySearchQuery)
-                                            : getCitiesByProvince(selectedProvince);
-                                        const city = cities.find(c => c.code === cityCode);
-                                        if (city) {
-                                            handleCityChange(city.code, city.name);
-                                        }
-                                    }}
-                                    disabled={!selectedProvince && !citySearchQuery}
-                                    className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500 disabled:opacity-50"
-                                >
-                                    <option value="">请选择城市</option>
-                                    {(citySearchQuery
-                                        ? searchCities(citySearchQuery)
-                                        : getCitiesByProvince(selectedProvince)
-                                    ).map(city => (
-                                        <option key={city.code} value={city.code}>
-                                            {city.name} {citySearchQuery && `(${city.province})`}
+                                    <option value="">请选择分类</option>
+                                    {categories.map((cat) => (
+                                        <option key={cat.id} value={cat.id}>
+                                            {cat.name}
                                         </option>
                                     ))}
                                 </select>
                             </div>
 
-                            {/* 获取天气按钮 */}
-                            {selectedCityCode && weatherApiKey && (
-                                <button
-                                    onClick={() => {
-                                        const cities = citySearchQuery
-                                            ? searchCities(citySearchQuery)
-                                            : getCitiesByProvince(selectedProvince);
-                                        const city = cities.find(c => c.code === selectedCityCode);
-                                        if (city) {
-                                            handleCityChange(city.code, city.name);
-                                        }
-                                    }}
-                                    disabled={fetchingWeather}
-                                    className="w-full px-4 py-2 bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 rounded-lg text-green-400 transition-colors disabled:opacity-50"
-                                >
-                                    {fetchingWeather ? (
-                                        <span className="flex items-center justify-center">
-                                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                                            获取天气中...
-                                        </span>
-                                    ) : (
-                                        '刷新天气数据'
-                                    )}
-                                </button>
-                            )}
+                            {selectedCategoryId && (
+                                <>
+                                    <div className="mb-6 p-4 bg-black/60 border border-green-500/30 rounded-lg">
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                            <input
+                                                type="text"
+                                                value={newSite.name}
+                                                onChange={(e) => setNewSite({ ...newSite, name: e.target.value })}
+                                                placeholder="网站名称"
+                                                className="px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white placeholder-green-500/50 focus:outline-none focus:border-green-500"
+                                            />
+                                            <input
+                                                type="url"
+                                                value={newSite.url}
+                                                onChange={(e) => setNewSite({ ...newSite, url: e.target.value })}
+                                                placeholder="https://..."
+                                                className="px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white placeholder-green-500/50 focus:outline-none focus:border-green-500"
+                                            />
+                                            <input
+                                                type="text"
+                                                value={newSite.logo}
+                                                onChange={(e) => setNewSite({ ...newSite, logo: e.target.value })}
+                                                placeholder="🔗"
+                                                className="px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white placeholder-green-500/50 focus:outline-none focus:border-green-500"
+                                            />
+                                        </div>
+                                        <button
+                                            onClick={handleAddSite}
+                                            disabled={loading}
+                                            className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-black font-semibold rounded-lg transition-colors disabled:opacity-50"
+                                        >
+                                            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
+                                            <span>添加网站</span>
+                                        </button>
+                                    </div>
 
-                            {/* 当前天气显示 */}
-                            {settingsForm.city && (
-                                <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
-                                    <p className="text-green-400 text-sm mb-1">当前设置：</p>
-                                    <p className="text-white">
-                                        {settingsForm.city} · {settingsForm.temperature} · {settingsForm.weather_condition}
+                                    {editingSite && (
+                                        <div className="mb-6 p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
+                                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                                                <input
+                                                    type="text"
+                                                    value={editingSite.name}
+                                                    onChange={(e) =>
+                                                        setEditingSite({ ...editingSite, name: e.target.value })
+                                                    }
+                                                    placeholder="网站名称"
+                                                    className="px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
+                                                />
+                                                <input
+                                                    type="url"
+                                                    value={editingSite.url}
+                                                    onChange={(e) =>
+                                                        setEditingSite({ ...editingSite, url: e.target.value })
+                                                    }
+                                                    placeholder="https://..."
+                                                    className="px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    value={editingSite.logo}
+                                                    onChange={(e) =>
+                                                        setEditingSite({ ...editingSite, logo: e.target.value })
+                                                    }
+                                                    placeholder="🔗"
+                                                    className="px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
+                                                />
+                                                <select
+                                                    value={editingSite.category_id}
+                                                    onChange={(e) =>
+                                                        setEditingSite({ ...editingSite, category_id: e.target.value })
+                                                    }
+                                                    className="px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
+                                                >
+                                                    {categories.map((cat) => (
+                                                        <option key={cat.id} value={cat.id}>
+                                                            {cat.name}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div className="flex space-x-2">
+                                                <button
+                                                    onClick={handleUpdateSite}
+                                                    disabled={loading}
+                                                    className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-black font-semibold rounded-lg transition-colors"
+                                                >
+                                                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                                                    <span>保存</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => setEditingSite(null)}
+                                                    className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-500 rounded-lg transition-colors"
+                                                >
+                                                    取消
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <DndContext
+                                        sensors={sensors}
+                                        collisionDetection={closestCenter}
+                                        onDragEnd={handleDragEndSites}
+                                    >
+                                        <SortableContext items={filteredSites} strategy={verticalListSortingStrategy}>
+                                            <div className="space-y-2">
+                                                {filteredSites.map((site) => (
+                                                    <SortableSite
+                                                        key={site.id}
+                                                        site={site}
+                                                        onEdit={setEditingSite}
+                                                        onDelete={handleDeleteSite}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </SortableContext>
+                                    </DndContext>
+                                </>
+                            )}
+                        </div>
+                    )
+                }
+
+                {/* 设置 */}
+                {
+                    activeTab === 'settings' && (
+                        <div className="max-w-3xl space-y-6">
+                            {/* 网站标题 */}
+                            <div>
+                                <label className="block text-sm font-medium text-green-400 mb-2">网站标题</label>
+                                <input
+                                    type="text"
+                                    value={settingsForm.site_title}
+                                    onChange={(e) =>
+                                        setSettingsForm({ ...settingsForm, site_title: e.target.value })
+                                    }
+                                    className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
+                                />
+                            </div>
+
+                            {/* Logo 上传 */}
+                            <div className="p-4 bg-black/40 border border-green-500/20 rounded-lg">
+                                <label className="block text-sm font-medium text-green-400 mb-3">网站 Logo</label>
+
+                                {/* Logo 类型选择 */}
+                                <div className="flex gap-2 mb-4">
+                                    <button
+                                        onClick={() => setLogoType('emoji')}
+                                        className={`px-4 py-2 rounded-lg transition-colors ${logoType === 'emoji'
+                                            ? 'bg-green-500 text-black font-semibold'
+                                            : 'bg-black/60 text-green-400 border border-green-500/30'
+                                            }`}
+                                    >
+                                        Emoji
+                                    </button>
+                                    <button
+                                        onClick={() => setLogoType('url')}
+                                        className={`px-4 py-2 rounded-lg transition-colors ${logoType === 'url'
+                                            ? 'bg-green-500 text-black font-semibold'
+                                            : 'bg-black/60 text-green-400 border border-green-500/30'
+                                            }`}
+                                    >
+                                        图床链接
+                                    </button>
+                                    <button
+                                        onClick={() => setLogoType('upload')}
+                                        className={`px-4 py-2 rounded-lg transition-colors ${logoType === 'upload'
+                                            ? 'bg-green-500 text-black font-semibold'
+                                            : 'bg-black/60 text-green-400 border border-green-500/30'
+                                            }`}
+                                    >
+                                        上传图片
+                                    </button>
+                                </div>
+
+                                {/* Emoji 输入 */}
+                                {logoType === 'emoji' && (
+                                    <input
+                                        type="text"
+                                        value={settingsForm.logo_content}
+                                        onChange={(e) =>
+                                            setSettingsForm({ ...settingsForm, logo_content: e.target.value })
+                                        }
+                                        placeholder="输入 Emoji，如 🌐"
+                                        className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white placeholder-green-500/50 focus:outline-none focus:border-green-500"
+                                    />
+                                )}
+
+                                {/* URL 输入 */}
+                                {logoType === 'url' && (
+                                    <input
+                                        type="url"
+                                        value={settingsForm.logo_content}
+                                        onChange={(e) =>
+                                            setSettingsForm({ ...settingsForm, logo_content: e.target.value })
+                                        }
+                                        placeholder="https://example.com/logo.png"
+                                        className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white placeholder-green-500/50 focus:outline-none focus:border-green-500"
+                                    />
+                                )}
+
+                                {/* 文件上传 */}
+                                {logoType === 'upload' && (
+                                    <div>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleLogoFileChange}
+                                            className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-500 file:text-black file:font-semibold hover:file:bg-green-600"
+                                        />
+                                        <p className="text-green-500/50 text-xs mt-2">支持 JPG、PNG、GIF，最大 2MB</p>
+                                    </div>
+                                )}
+
+                                {/* Logo 预览 */}
+                                {settingsForm.logo_content && (
+                                    <div className="mt-4 p-4 bg-black/60 border border-green-500/30 rounded-lg">
+                                        <p className="text-green-400 text-sm mb-2">预览：</p>
+                                        {logoType === 'emoji' ? (
+                                            <span className="text-4xl">{settingsForm.logo_content}</span>
+                                        ) : (
+                                            <img
+                                                src={settingsForm.logo_content}
+                                                alt="Logo Preview"
+                                                className="w-16 h-16 object-contain"
+                                                onError={(e) => {
+                                                    e.currentTarget.style.display = 'none';
+                                                }}
+                                            />
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* 天气 API 配置 */}
+                            <div className="p-4 bg-black/40 border border-green-500/20 rounded-lg space-y-4">
+                                <label className="block text-sm font-medium text-green-400">天气 API 配置</label>
+
+                                {/* API 提供商选择 */}
+                                <div>
+                                    <label className="block text-sm text-green-400/80 mb-2">选择天气服务</label>
+                                    <select
+                                        value={weatherProvider}
+                                        onChange={(e) => setWeatherProvider(e.target.value as WeatherProvider)}
+                                        className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
+                                    >
+                                        <option value="qweather">和风天气 (推荐)</option>
+                                        <option value="openweather">OpenWeather</option>
+                                        <option value="seniverse">心知天气</option>
+                                    </select>
+                                </div>
+
+                                {/* API Key 输入 */}
+                                <div>
+                                    <label className="block text-sm text-green-400/80 mb-2">API Key</label>
+                                    <input
+                                        type="text"
+                                        value={weatherApiKey}
+                                        onChange={(e) => setWeatherApiKey(e.target.value)}
+                                        placeholder="输入您的天气 API Key"
+                                        className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white placeholder-green-500/50 focus:outline-none focus:border-green-500"
+                                    />
+                                    <p className="text-green-500/50 text-xs mt-1">
+                                        {weatherProvider === 'qweather' && '获取 API Key: https://dev.qweather.com/'}
+                                        {weatherProvider === 'openweather' && '获取 API Key: https://openweathermap.org/api'}
+                                        {weatherProvider === 'seniverse' && '获取 API Key: https://www.seniverse.com/'}
                                     </p>
                                 </div>
-                            )}
-                        </div>
+                            </div>
 
-                        {/* 手动输入（备用） */}
-                        <div className="p-4 bg-black/40 border border-green-500/20 rounded-lg space-y-4">
-                            <label className="block text-sm font-medium text-green-400">手动输入（可选）</label>
+                            {/* 城市选择 */}
+                            <div className="p-4 bg-black/40 border border-green-500/20 rounded-lg space-y-4">
+                                <label className="block text-sm font-medium text-green-400">城市与天气</label>
 
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {/* 城市搜索 */}
                                 <div>
-                                    <label className="block text-sm text-green-400/80 mb-2">城市</label>
+                                    <label className="block text-sm text-green-400/80 mb-2">搜索城市</label>
                                     <input
                                         type="text"
-                                        value={settingsForm.city}
-                                        onChange={(e) => setSettingsForm({ ...settingsForm, city: e.target.value })}
-                                        className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
+                                        value={citySearchQuery}
+                                        onChange={(e) => setCitySearchQuery(e.target.value)}
+                                        placeholder="输入城市名称搜索..."
+                                        className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white placeholder-green-500/50 focus:outline-none focus:border-green-500"
                                     />
                                 </div>
+
+                                {/* 省份选择 */}
+                                {!citySearchQuery && (
+                                    <div>
+                                        <label className="block text-sm text-green-400/80 mb-2">选择省份</label>
+                                        <select
+                                            value={selectedProvince}
+                                            onChange={(e) => {
+                                                setSelectedProvince(e.target.value);
+                                                setSelectedCityCode('');
+                                            }}
+                                            className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
+                                        >
+                                            <option value="">请选择省份</option>
+                                            {getProvinces().map(province => (
+                                                <option key={province} value={province}>{province}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+
+                                {/* 城市选择 */}
                                 <div>
-                                    <label className="block text-sm text-green-400/80 mb-2">温度</label>
-                                    <input
-                                        type="text"
-                                        value={settingsForm.temperature}
-                                        onChange={(e) =>
-                                            setSettingsForm({ ...settingsForm, temperature: e.target.value })
-                                        }
-                                        className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
-                                    />
+                                    <label className="block text-sm text-green-400/80 mb-2">选择城市</label>
+                                    <select
+                                        value={selectedCityCode}
+                                        onChange={(e) => {
+                                            const cityCode = e.target.value;
+                                            const cities = citySearchQuery
+                                                ? searchCities(citySearchQuery)
+                                                : getCitiesByProvince(selectedProvince);
+                                            const city = cities.find(c => c.code === cityCode);
+                                            if (city) {
+                                                handleCityChange(city.code, city.name);
+                                            }
+                                        }}
+                                        disabled={!selectedProvince && !citySearchQuery}
+                                        className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500 disabled:opacity-50"
+                                    >
+                                        <option value="">请选择城市</option>
+                                        {(citySearchQuery
+                                            ? searchCities(citySearchQuery)
+                                            : getCitiesByProvince(selectedProvince)
+                                        ).map(city => (
+                                            <option key={city.code} value={city.code}>
+                                                {city.name} {citySearchQuery && `(${city.province})`}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
-                                <div>
-                                    <label className="block text-sm text-green-400/80 mb-2">天气状况</label>
-                                    <input
-                                        type="text"
-                                        value={settingsForm.weather_condition}
-                                        onChange={(e) =>
-                                            setSettingsForm({ ...settingsForm, weather_condition: e.target.value })
-                                        }
-                                        className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
-                                    />
+
+                                {/* 获取天气按钮 */}
+                                {selectedCityCode && weatherApiKey && (
+                                    <button
+                                        onClick={() => {
+                                            const cities = citySearchQuery
+                                                ? searchCities(citySearchQuery)
+                                                : getCitiesByProvince(selectedProvince);
+                                            const city = cities.find(c => c.code === selectedCityCode);
+                                            if (city) {
+                                                handleCityChange(city.code, city.name);
+                                            }
+                                        }}
+                                        disabled={fetchingWeather}
+                                        className="w-full px-4 py-2 bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 rounded-lg text-green-400 transition-colors disabled:opacity-50"
+                                    >
+                                        {fetchingWeather ? (
+                                            <span className="flex items-center justify-center">
+                                                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                                获取天气中...
+                                            </span>
+                                        ) : (
+                                            '刷新天气数据'
+                                        )}
+                                    </button>
+                                )}
+
+                                {/* 当前天气显示 */}
+                                {settingsForm.city && (
+                                    <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+                                        <p className="text-green-400 text-sm mb-1">当前设置：</p>
+                                        <p className="text-white">
+                                            {settingsForm.city} · {settingsForm.temperature} · {settingsForm.weather_condition}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* 手动输入（备用） */}
+                            <div className="p-4 bg-black/40 border border-green-500/20 rounded-lg space-y-4">
+                                <label className="block text-sm font-medium text-green-400">手动输入（可选）</label>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <label className="block text-sm text-green-400/80 mb-2">城市</label>
+                                        <input
+                                            type="text"
+                                            value={settingsForm.city}
+                                            onChange={(e) => setSettingsForm({ ...settingsForm, city: e.target.value })}
+                                            className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm text-green-400/80 mb-2">温度</label>
+                                        <input
+                                            type="text"
+                                            value={settingsForm.temperature}
+                                            onChange={(e) =>
+                                                setSettingsForm({ ...settingsForm, temperature: e.target.value })
+                                            }
+                                            className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm text-green-400/80 mb-2">天气状况</label>
+                                        <input
+                                            type="text"
+                                            value={settingsForm.weather_condition}
+                                            onChange={(e) =>
+                                                setSettingsForm({ ...settingsForm, weather_condition: e.target.value })
+                                            }
+                                            className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
+                                        />
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        {/* 默认搜索引擎 */}
-                        <div>
-                            <label className="block text-sm font-medium text-green-400 mb-2">默认搜索引擎</label>
-                            <select
-                                value={settingsForm.default_search_engine}
-                                onChange={(e) =>
-                                    setSettingsForm({ ...settingsForm, default_search_engine: e.target.value })
-                                }
-                                className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
+                            {/* 默认搜索引擎 */}
+                            <div>
+                                <label className="block text-sm font-medium text-green-400 mb-2">默认搜索引擎</label>
+                                <select
+                                    value={settingsForm.default_search_engine}
+                                    onChange={(e) =>
+                                        setSettingsForm({ ...settingsForm, default_search_engine: e.target.value })
+                                    }
+                                    className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
+                                >
+                                    <option value="google">Google</option>
+                                    <option value="bing">Bing</option>
+                                    <option value="baidu">百度</option>
+                                </select>
+                            </div>
+
+                            {/* 保存按钮 */}
+                            <button
+                                onClick={handleSaveSettings}
+                                disabled={loading}
+                                className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-green-500 hover:bg-green-600 text-black font-semibold rounded-lg transition-colors disabled:opacity-50"
                             >
-                                <option value="google">Google</option>
-                                <option value="bing">Bing</option>
-                                <option value="baidu">百度</option>
-                            </select>
+                                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                                <span>保存设置</span>
+                            </button>
                         </div>
-
-                        {/* 保存按钮 */}
-                        <button
-                            onClick={handleSaveSettings}
-                            disabled={loading}
-                            className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-green-500 hover:bg-green-600 text-black font-semibold rounded-lg transition-colors disabled:opacity-50"
-                        >
-                            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                            <span>保存设置</span>
-                        </button>
-                    </div>
-                )}
-
+                    )
+                }
                 {/* 数据管理 */}
-                {activeTab === 'data' && (
-                    <div className="max-w-2xl space-y-6">
-                        <div className="p-6 bg-black/60 border border-green-500/30 rounded-lg">
-                            <h3 className="text-lg font-semibold text-green-500 mb-4">导出数据</h3>
-                            <p className="text-green-400/70 mb-4">
-                                导出所有分类、网站和设置数据为 JSON 文件，用于备份或迁移。
-                            </p>
-                            <button
-                                onClick={handleExportData}
-                                className="flex items-center space-x-2 px-6 py-3 bg-green-500 hover:bg-green-600 text-black font-semibold rounded-lg transition-colors"
-                            >
-                                <Download className="w-5 h-5" />
-                                <span>导出数据</span>
-                            </button>
-                        </div>
+                {
+                    activeTab === 'data' && (
+                        <div className="max-w-2xl space-y-6">
+                            <div className="p-6 bg-black/60 border border-green-500/30 rounded-lg">
+                                <h3 className="text-lg font-semibold text-green-500 mb-4">导出数据</h3>
+                                <p className="text-green-400/70 mb-4">
+                                    导出所有分类、网站和设置数据为 JSON 文件，用于备份或迁移。
+                                </p>
+                                <button
+                                    onClick={handleExportData}
+                                    className="flex items-center space-x-2 px-6 py-3 bg-green-500 hover:bg-green-600 text-black font-semibold rounded-lg transition-colors"
+                                >
+                                    <Download className="w-5 h-5" />
+                                    <span>导出数据</span>
+                                </button>
+                            </div>
 
-                        <div className="p-6 bg-black/60 border border-green-500/30 rounded-lg">
-                            <h3 className="text-lg font-semibold text-green-500 mb-4">导入数据</h3>
-                            <p className="text-green-400/70 mb-4">
-                                从之前导出的 JSON 文件导入数据。<strong className="text-red-400">注意：这将覆盖当前所有数据！</strong>
-                            </p>
-                            <label className="flex items-center space-x-2 px-6 py-3 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-lg transition-colors cursor-pointer">
-                                <Upload className="w-5 h-5 text-green-500" />
-                                <span className="text-green-500 font-semibold">选择文件导入</span>
-                                <input
-                                    type="file"
-                                    accept=".json"
-                                    onChange={handleImportData}
-                                    className="hidden"
-                                />
-                            </label>
-                        </div>
+                            <div className="p-6 bg-black/60 border border-green-500/30 rounded-lg">
+                                <h3 className="text-lg font-semibold text-green-500 mb-4">导入数据</h3>
+                                <p className="text-green-400/70 mb-4">
+                                    从之前导出的 JSON 文件导入数据。<strong className="text-red-400">注意：这将覆盖当前所有数据！</strong>
+                                </p>
+                                <label className="flex items-center space-x-2 px-6 py-3 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-lg transition-colors cursor-pointer">
+                                    <Upload className="w-5 h-5 text-green-500" />
+                                    <span className="text-green-500 font-semibold">选择文件导入</span>
+                                    <input
+                                        type="file"
+                                        accept=".json"
+                                        onChange={handleImportData}
+                                        className="hidden"
+                                    />
+                                </label>
+                            </div>
 
-                        <div className="p-6 bg-black/60 border border-green-500/30 rounded-lg">
-                            <h3 className="text-lg font-semibold text-green-500 mb-4">导入书签</h3>
-                            <p className="text-green-400/70 mb-4">
-                                从浏览器导出的 HTML 书签文件或 JSON 格式导入书签。支持 Chrome、Firefox、Edge 等浏览器。
-                                <br />
-                                <span className="text-green-500/70 text-sm">💡 书签将被追加到现有数据中,不会覆盖。</span>
-                            </p>
-                            <label className="flex items-center space-x-2 px-6 py-3 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-lg transition-colors cursor-pointer">
-                                <FileText className="w-5 h-5 text-green-500" />
-                                <span className="text-green-500 font-semibold">选择书签文件</span>
-                                <input
-                                    type="file"
-                                    accept=".html,.htm,.json"
-                                    onChange={handleImportBookmarks}
-                                    className="hidden"
-                                />
-                            </label>
-                        </div>
+                            <div className="p-6 bg-black/60 border border-green-500/30 rounded-lg">
+                                <h3 className="text-lg font-semibold text-green-500 mb-4">导入书签</h3>
+                                <p className="text-green-400/70 mb-4">
+                                    从浏览器导出的 HTML 书签文件或 JSON 格式导入书签。支持 Chrome、Firefox、Edge 等浏览器。
+                                    <br />
+                                    <span className="text-green-500/70 text-sm">💡 书签将被追加到现有数据中,不会覆盖。</span>
+                                </p>
+                                <label className="flex items-center space-x-2 px-6 py-3 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-lg transition-colors cursor-pointer">
+                                    <FileText className="w-5 h-5 text-green-500" />
+                                    <span className="text-green-500 font-semibold">选择书签文件</span>
+                                    <input
+                                        type="file"
+                                        accept=".html,.htm,.json"
+                                        onChange={handleImportBookmarks}
+                                        className="hidden"
+                                    />
+                                </label>
+                            </div>
 
-                        <div className="p-6 bg-black/60 border border-red-500/30 rounded-lg">
-                            <h3 className="text-lg font-semibold text-red-500 mb-4">⚠️ 危险操作</h3>
-                            <p className="text-red-400/70 mb-4">
-                                清除所有书签和网站数据。<strong className="text-red-500">此操作不可恢复!</strong>
-                                <br />
-                                <span className="text-red-400/50 text-sm">注意: 分类不会被删除,只删除网站数据。</span>
-                            </p>
-                            <button
-                                onClick={handleClearAllData}
-                                className="flex items-center space-x-2 px-6 py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-lg transition-colors"
-                            >
-                                <Trash2 className="w-5 h-5 text-red-500" />
-                                <span className="text-red-500 font-semibold">清除所有数据</span>
-                            </button>
+                            <div className="p-6 bg-black/60 border border-red-500/30 rounded-lg">
+                                <h3 className="text-lg font-semibold text-red-500 mb-4">⚠️ 危险操作</h3>
+                                <p className="text-red-400/70 mb-4">
+                                    清除所有书签和网站数据。<strong className="text-red-500">此操作不可恢复!</strong>
+                                    <br />
+                                    <span className="text-red-400/50 text-sm">注意: 分类不会被删除,只删除网站数据。</span>
+                                </p>
+                                <button
+                                    onClick={handleClearAllData}
+                                    className="flex items-center space-x-2 px-6 py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-lg transition-colors"
+                                >
+                                    <Trash2 className="w-5 h-5 text-red-500" />
+                                    <span className="text-red-500 font-semibold">清除所有数据</span>
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
+                    )
+                }
+            </div >
+        </div >
+    )
 }
