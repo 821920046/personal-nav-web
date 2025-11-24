@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, type Category, type Site, type Settings } from '../lib/supabase';
 import MatrixRain from '../components/MatrixRain';
-import { Search, LogOut, Settings as SettingsIcon, Loader2 } from 'lucide-react';
+import Sidebar from '../components/Sidebar';
+import { Search, Menu, Loader2 } from 'lucide-react';
 
 export default function Home() {
   const { user, signOut } = useAuth();
@@ -16,6 +17,7 @@ export default function Home() {
   const [progress, setProgress] = useState(0);
   const [searchEngine, setSearchEngine] = useState('Google');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // 加载进度条动画
   useEffect(() => {
@@ -176,95 +178,48 @@ export default function Home() {
     <div className="min-h-screen bg-black text-white">
       <MatrixRain />
 
-      {/* 导航栏 */}
-      <nav className="relative z-10 bg-black/60 backdrop-blur-md border-b border-green-500/20">
+      {/* 侧边栏 */}
+      <Sidebar
+        categories={categories}
+        activeCategory={activeCategory}
+        onCategoryClick={(categoryId) => {
+          setActiveCategory(categoryId);
+          if (categoryId) {
+            const element = document.getElementById(`category-${categoryId}`);
+            element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          } else {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+        }}
+        user={user}
+        onLogout={handleLogout}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        siteLogo={settings?.logo_type !== 'emoji' ? settings?.logo_content : undefined}
+        siteTitle={settings?.site_title}
+      />
+
+      {/* 顶部导航栏（仅移动端汉堡菜单） */}
+      <nav className="relative z-10 bg-black/60 backdrop-blur-md border-b border-green-500/20 md:ml-64">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-2">
           <div className="flex items-center space-x-2 min-w-0">
-            {settings?.logo_type === 'emoji' || !settings?.logo_content ? (
-              <span className="text-2xl flex-shrink-0">{settings?.logo_content || '🌐'}</span>
-            ) : (
-              <img
-                src={settings.logo_content}
-                alt="Site Logo"
-                className="w-8 h-8 object-contain rounded-sm"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                }}
-              />
-            )}
-            <span className="hidden text-2xl flex-shrink-0">🌐</span>
-            <h1 className="text-lg md:text-xl font-bold text-green-500 truncate">{settings?.site_title || '智能导航'}</h1>
-          </div>
+            {/* 移动端汉堡菜单 */}
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="md:hidden p-2 hover:bg-green-500/10 rounded-lg transition-colors flex-shrink-0"
+            >
+              <Menu className="w-5 h-5 text-white/80" />
+            </button>
 
-          <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
-
-            {user && (
-              <>
-                <button
-                  onClick={() => navigate('/admin')}
-                  className="flex items-center gap-1 md:gap-2 px-2 md:px-4 py-2 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-lg transition-colors text-sm"
-                >
-                  <SettingsIcon className="w-4 h-4" />
-                  <span className="hidden sm:inline">管理</span>
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center gap-1 md:gap-2 px-2 md:px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-lg transition-colors text-sm"
-                >
-                  <LogOut className="w-4 h-4" />
-                  <span className="hidden sm:inline">退出</span>
-                </button>
-              </>
-            )}
-
-            {!user && (
-              <button
-                onClick={() => navigate('/login')}
-                className="px-3 md:px-4 py-2 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-lg transition-colors text-sm"
-              >
-                登录
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* 分类导航标签 */}
-        <div className="border-t border-green-500/10">
-          <div className="container mx-auto px-4">
-            <div className="flex items-center space-x-2 sm:space-x-4 md:space-x-6 overflow-x-auto scrollbar-hide py-1">
-              <button
-                onClick={() => setActiveCategory(null)}
-                className="relative px-2 sm:px-3 md:px-4 py-2.5 md:py-3 text-sm sm:text-base text-white/80 hover:text-white transition-colors whitespace-nowrap flex-shrink-0"
-              >
-                Home
-                {activeCategory === null && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-500" />
-                )}
-              </button>
-              {getNonEmptyCategories().map((category) => (
-                <button
-                  key={category.id}
-                  onClick={() => {
-                    setActiveCategory(category.id);
-                    const element = document.getElementById(`category-${category.id}`);
-                    element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  }}
-                  className="relative px-2 sm:px-3 md:px-4 py-2.5 md:py-3 text-sm sm:text-base text-white/80 hover:text-white transition-colors whitespace-nowrap flex-shrink-0"
-                >
-                  {category.name}
-                  {activeCategory === category.id && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-500" />
-                  )}
-                </button>
-              ))}
-            </div>
+            <h1 className="text-lg md:text-xl font-bold text-green-500 truncate md:hidden">
+              {settings?.site_title || '智能导航'}
+            </h1>
           </div>
         </div>
       </nav>
 
       {/* 主内容 */}
-      <main className="relative z-10 container mx-auto px-4 py-8">
+      <main className="relative z-10 container mx-auto px-4 py-8 md:ml-64">
         {/* 搜索框 */}
         <div className="max-w-3xl mx-auto mb-8 md:mb-12">
           {/* 搜索引擎选择 */}
