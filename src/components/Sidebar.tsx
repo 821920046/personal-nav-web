@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings as SettingsIcon, LogOut, Menu, X, Home } from 'lucide-react';
+import { Settings as SettingsIcon, LogOut, Menu, X, Home, ChevronLeft, ChevronRight } from 'lucide-react';
 import { type Category } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
 
@@ -14,6 +14,8 @@ interface SidebarProps {
     onClose: () => void;
     siteLogo?: string;
     siteTitle?: string;
+    isCollapsed: boolean;
+    onToggleCollapse: () => void;
 }
 
 export default function Sidebar({
@@ -26,6 +28,8 @@ export default function Sidebar({
     onClose,
     siteLogo,
     siteTitle,
+    isCollapsed,
+    onToggleCollapse,
 }: SidebarProps) {
     const navigate = useNavigate();
     const [isMobile, setIsMobile] = useState(false);
@@ -64,7 +68,8 @@ export default function Sidebar({
 
             {/* 侧边栏 */}
             <aside
-                className={`fixed top-0 left-0 h-full w-64 bg-black/90 backdrop-blur-md border-r border-green-500/20 z-50 flex flex-col transition-transform duration-300 ${isMobile ? (isOpen ? 'translate-x-0' : '-translate-x-full') : 'translate-x-0'
+                className={`fixed top-0 left-0 h-full bg-black/90 backdrop-blur-md border-r border-green-500/20 z-50 flex flex-col transition-all duration-300 ${isCollapsed && !isMobile ? 'w-16' : 'w-64'
+                    } ${isMobile ? (isOpen ? 'translate-x-0' : '-translate-x-full') : 'translate-x-0'
                     }`}
             >
                 {/* 顶部 Logo & Title */}
@@ -82,16 +87,36 @@ export default function Sidebar({
                         ) : (
                             <span className="text-2xl flex-shrink-0">🌐</span>
                         )}
-                        <h2 className="text-lg font-bold text-green-500 truncate">
-                            {siteTitle || '智能导航'}
-                        </h2>
+                        {!isCollapsed && (
+                            <h2 className="text-lg font-bold text-green-500 truncate">
+                                {siteTitle || '智能导航'}
+                            </h2>
+                        )}
                     </div>
+
+                    {/* 移动端关闭按钮 */}
                     {isMobile && (
                         <button
                             onClick={onClose}
                             className="p-2 hover:bg-green-500/10 rounded-lg transition-colors flex-shrink-0"
+                            title="关闭"
                         >
                             <X className="w-5 h-5 text-white/80" />
+                        </button>
+                    )}
+
+                    {/* 桌面端折叠按钮 */}
+                    {!isMobile && (
+                        <button
+                            onClick={onToggleCollapse}
+                            className="p-2 hover:bg-green-500/10 rounded-lg transition-colors flex-shrink-0"
+                            title={isCollapsed ? '展开侧边栏' : '折叠侧边栏'}
+                        >
+                            {isCollapsed ? (
+                                <ChevronRight className="w-5 h-5 text-white/80" />
+                            ) : (
+                                <ChevronLeft className="w-5 h-5 text-white/80" />
+                            )}
                         </button>
                     )}
                 </div>
@@ -103,12 +128,13 @@ export default function Sidebar({
                         <button
                             onClick={() => handleCategoryClick(null)}
                             className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all ${activeCategory === null
-                                ? 'bg-green-500/20 text-green-500'
-                                : 'text-white/80 hover:bg-green-500/10 hover:text-white'
+                                    ? 'bg-green-500/20 text-green-500'
+                                    : 'text-white/80 hover:bg-green-500/10 hover:text-white'
                                 }`}
+                            title="首页"
                         >
                             <Home className="w-5 h-5 flex-shrink-0" />
-                            <span className="text-sm font-medium">首页</span>
+                            {!isCollapsed && <span className="text-sm font-medium">首页</span>}
                         </button>
 
                         {/* 分类列表 */}
@@ -117,16 +143,19 @@ export default function Sidebar({
                                 key={category.id}
                                 onClick={() => handleCategoryClick(category.id)}
                                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all ${activeCategory === category.id
-                                    ? 'bg-green-500/20 text-green-500'
-                                    : 'text-white/80 hover:bg-green-500/10 hover:text-white'
+                                        ? 'bg-green-500/20 text-green-500'
+                                        : 'text-white/80 hover:bg-green-500/10 hover:text-white'
                                     }`}
+                                title={category.name}
                             >
                                 <span className="text-lg flex-shrink-0">
                                     {category.name.match(/[\u{1F300}-\u{1F9FF}]/u)?.[0] || '📁'}
                                 </span>
-                                <span className="text-sm font-medium truncate">
-                                    {category.name.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim() || category.name}
-                                </span>
+                                {!isCollapsed && (
+                                    <span className="text-sm font-medium truncate">
+                                        {category.name.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim() || category.name}
+                                    </span>
+                                )}
                             </button>
                         ))}
                     </nav>
@@ -142,9 +171,10 @@ export default function Sidebar({
                                     if (isMobile) onClose();
                                 }}
                                 className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-lg transition-colors"
+                                title="管理后台"
                             >
                                 <SettingsIcon className="w-4 h-4" />
-                                <span className="text-sm">管理后台</span>
+                                {!isCollapsed && <span className="text-sm">管理后台</span>}
                             </button>
                             <button
                                 onClick={() => {
@@ -152,9 +182,10 @@ export default function Sidebar({
                                     if (isMobile) onClose();
                                 }}
                                 className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-lg transition-colors"
+                                title="退出登录"
                             >
                                 <LogOut className="w-4 h-4" />
-                                <span className="text-sm">退出登录</span>
+                                {!isCollapsed && <span className="text-sm">退出登录</span>}
                             </button>
                         </>
                     ) : (
@@ -164,8 +195,9 @@ export default function Sidebar({
                                 if (isMobile) onClose();
                             }}
                             className="w-full px-4 py-3 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-lg transition-colors text-sm"
+                            title="登录"
                         >
-                            登录
+                            {isCollapsed ? '🔑' : '登录'}
                         </button>
                     )}
                 </div>
