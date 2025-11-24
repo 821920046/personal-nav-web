@@ -18,6 +18,7 @@ export default function Home() {
   const [searchEngine, setSearchEngine] = useState('Google');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // 加载进度条动画
   useEffect(() => {
@@ -197,10 +198,13 @@ export default function Home() {
         onClose={() => setSidebarOpen(false)}
         siteLogo={settings?.logo_type !== 'emoji' ? settings?.logo_content : undefined}
         siteTitle={settings?.site_title}
+        isCollapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
       />
 
       {/* 顶部导航栏（仅移动端汉堡菜单） */}
-      <nav className="relative z-10 bg-black/60 backdrop-blur-md border-b border-green-500/20 md:ml-64">
+      <nav className={`relative z-10 bg-black/60 backdrop-blur-md border-b border-green-500/20 transition-all duration-300 ${sidebarCollapsed ? 'md:ml-16' : 'md:ml-64'
+        }`}>
         <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-2">
           <div className="flex items-center space-x-2 min-w-0">
             {/* 移动端汉堡菜单 */}
@@ -219,7 +223,8 @@ export default function Home() {
       </nav>
 
       {/* 主内容 */}
-      <main className="relative z-10 container mx-auto px-4 py-8 md:ml-64">
+      <main className={`relative z-10 container mx-auto px-4 py-8 transition-all duration-300 ${sidebarCollapsed ? 'md:ml-16' : 'md:ml-64'
+        }`}>
         {/* 搜索框 */}
         <div className="max-w-3xl mx-auto mb-8 md:mb-12">
           {/* 搜索引擎选择 */}
