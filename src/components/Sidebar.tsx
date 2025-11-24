@@ -73,7 +73,8 @@ export default function Sidebar({
                     }`}
             >
                 {/* 顶部 Logo & Title */}
-                <div className="flex items-center justify-between p-4 border-b border-green-500/20">
+                <div className={`flex items-center p-4 border-b border-green-500/20 ${isCollapsed ? 'flex-col gap-2' : 'justify-between'
+                    }`}>
                     <div className="flex items-center space-x-2 min-w-0 flex-1">
                         {siteLogo ? (
                             <img
@@ -173,7 +174,7 @@ export default function Sidebar({
                                 className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-lg transition-colors"
                                 title="管理后台"
                             >
-                                <SettingsIcon className="w-4 h-4" />
+                                <SettingsIcon className="w-4 h-4 flex-shrink-0" />
                                 {!isCollapsed && <span className="text-sm">管理后台</span>}
                             </button>
                             <button
@@ -184,7 +185,7 @@ export default function Sidebar({
                                 className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-lg transition-colors"
                                 title="退出登录"
                             >
-                                <LogOut className="w-4 h-4" />
+                                <LogOut className="w-4 h-4 flex-shrink-0" />
                                 {!isCollapsed && <span className="text-sm">退出登录</span>}
                             </button>
                         </>
