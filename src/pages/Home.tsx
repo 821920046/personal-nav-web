@@ -232,10 +232,10 @@ export default function Home() {
         {/* 分类导航标签 */}
         <div className="border-t border-green-500/10">
           <div className="container mx-auto px-4">
-            <div className="flex items-center space-x-6 overflow-x-auto scrollbar-hide">
+            <div className="flex items-center space-x-2 sm:space-x-4 md:space-x-6 overflow-x-auto scrollbar-hide py-1">
               <button
                 onClick={() => setActiveCategory(null)}
-                className="relative px-4 py-3 text-white/80 hover:text-white transition-colors whitespace-nowrap"
+                className="relative px-2 sm:px-3 md:px-4 py-2.5 md:py-3 text-sm sm:text-base text-white/80 hover:text-white transition-colors whitespace-nowrap flex-shrink-0"
               >
                 Home
                 {activeCategory === null && (
@@ -250,7 +250,7 @@ export default function Home() {
                     const element = document.getElementById(`category-${category.id}`);
                     element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                   }}
-                  className="relative px-4 py-3 text-white/80 hover:text-white transition-colors whitespace-nowrap"
+                  className="relative px-2 sm:px-3 md:px-4 py-2.5 md:py-3 text-sm sm:text-base text-white/80 hover:text-white transition-colors whitespace-nowrap flex-shrink-0"
                 >
                   {category.name}
                   {activeCategory === category.id && (
