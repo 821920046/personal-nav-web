@@ -1,0 +1,175 @@
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Settings as SettingsIcon, LogOut, Menu, X, Home } from 'lucide-react';
+import { type Category } from '../lib/supabase';
+import type { User } from '@supabase/supabase-js';
+
+interface SidebarProps {
+    categories: Category[];
+    activeCategory: string | null;
+    onCategoryClick: (categoryId: string | null) => void;
+    user: User | null;
+    onLogout: () => void;
+    isOpen: boolean;
+    onClose: () => void;
+    siteLogo?: string;
+    siteTitle?: string;
+}
+
+export default function Sidebar({
+    categories,
+    activeCategory,
+    onCategoryClick,
+    user,
+    onLogout,
+    isOpen,
+    onClose,
+    siteLogo,
+    siteTitle,
+}: SidebarProps) {
+    const navigate = useNavigate();
+    const [isMobile, setIsMobile] = useState(false);
+
+    // 检测屏幕尺寸
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth <= 768);
+        };
+
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    // 处理分类点击
+    const handleCategoryClick = (categoryId: string | null) => {
+        onCategoryClick(categoryId);
+        if (isMobile) {
+            onClose();
+        }
+    };
+
+    // 获取非空分类
+    const nonEmptyCategories = categories.filter((cat) => cat);
+
+    return (
+        <>
+            {/* 移动端遮罩层 */}
+            {isMobile && isOpen && (
+                <div
+                    className="fixed inset-0 bg-black/50 z-40 md:hidden"
+                    onClick={onClose}
+                />
+            )}
+
+            {/* 侧边栏 */}
+            <aside
+                className={`fixed top-0 left-0 h-full w-64 bg-black/90 backdrop-blur-md border-r border-green-500/20 z-50 flex flex-col transition-transform duration-300 ${isMobile ? (isOpen ? 'translate-x-0' : '-translate-x-full') : 'translate-x-0'
+                    }`}
+            >
+                {/* 顶部 Logo & Title */}
+                <div className="flex items-center justify-between p-4 border-b border-green-500/20">
+                    <div className="flex items-center space-x-2 min-w-0 flex-1">
+                        {siteLogo ? (
+                            <img
+                                src={siteLogo}
+                                alt="Logo"
+                                className="w-8 h-8 object-contain rounded-sm flex-shrink-0"
+                                onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                }}
+                            />
+                        ) : (
+                            <span className="text-2xl flex-shrink-0">🌐</span>
+                        )}
+                        <h2 className="text-lg font-bold text-green-500 truncate">
+                            {siteTitle || '智能导航'}
+                        </h2>
+                    </div>
+                    {isMobile && (
+                        <button
+                            onClick={onClose}
+                            className="p-2 hover:bg-green-500/10 rounded-lg transition-colors flex-shrink-0"
+                        >
+                            <X className="w-5 h-5 text-white/80" />
+                        </button>
+                    )}
+                </div>
+
+                {/* 分类导航 */}
+                <div className="flex-1 overflow-y-auto scrollbar-hide py-4">
+                    <nav className="space-y-1 px-2">
+                        {/* Home 按钮 */}
+                        <button
+                            onClick={() => handleCategoryClick(null)}
+                            className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all ${activeCategory === null
+                                ? 'bg-green-500/20 text-green-500'
+                                : 'text-white/80 hover:bg-green-500/10 hover:text-white'
+                                }`}
+                        >
+                            <Home className="w-5 h-5 flex-shrink-0" />
+                            <span className="text-sm font-medium">首页</span>
+                        </button>
+
+                        {/* 分类列表 */}
+                        {nonEmptyCategories.map((category) => (
+                            <button
+                                key={category.id}
+                                onClick={() => handleCategoryClick(category.id)}
+                                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all ${activeCategory === category.id
+                                    ? 'bg-green-500/20 text-green-500'
+                                    : 'text-white/80 hover:bg-green-500/10 hover:text-white'
+                                    }`}
+                            >
+                                <span className="text-lg flex-shrink-0">
+                                    {category.name.match(/[\u{1F300}-\u{1F9FF}]/u)?.[0] || '📁'}
+                                </span>
+                                <span className="text-sm font-medium truncate">
+                                    {category.name.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim() || category.name}
+                                </span>
+                            </button>
+                        ))}
+                    </nav>
+                </div>
+
+                {/* 底部用户控制区 */}
+                <div className="p-4 border-t border-green-500/20 space-y-2">
+                    {user ? (
+                        <>
+                            <button
+                                onClick={() => {
+                                    navigate('/admin');
+                                    if (isMobile) onClose();
+                                }}
+                                className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-lg transition-colors"
+                            >
+                                <SettingsIcon className="w-4 h-4" />
+                                <span className="text-sm">管理后台</span>
+                            </button>
+                            <button
+                                onClick={() => {
+                                    onLogout();
+                                    if (isMobile) onClose();
+                                }}
+                                className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-lg transition-colors"
+                            >
+                                <LogOut className="w-4 h-4" />
+                                <span className="text-sm">退出登录</span>
+                            </button>
+                        </>
+                    ) : (
+                        <button
+                            onClick={() => {
+                                navigate('/login');
+                                if (isMobile) onClose();
+                            }}
+                            className="w-full px-4 py-3 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-lg transition-colors text-sm"
+                        >
+                            登录
+                        </button>
+                    )}
+                </div>
+            </aside>
+        </>
+    );
+}
