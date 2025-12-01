@@ -231,6 +231,24 @@ export default function Admin() {
         }
     };
 
+    // URL验证和规范化函数
+    const normalizeUrl = (url: string): string => {
+        let normalizedUrl = url.trim();
+
+        // 如果没有协议，添加 https://
+        if (!normalizedUrl.match(/^[a-zA-Z][a-zA-Z\d+\-.]*:/)) {
+            normalizedUrl = 'https://' + normalizedUrl;
+        }
+
+        // 验证URL是否有效
+        try {
+            new URL(normalizedUrl);
+            return normalizedUrl;
+        } catch (e) {
+            throw new Error('无效的URL格式');
+        }
+    };
+
     // 分类管理函数
     const handleAddCategory = async () => {
         if (!newCategoryName.trim() || !user) return;
@@ -330,13 +348,16 @@ export default function Admin() {
 
         setLoading(true);
         try {
+            // 验证和规范化URL
+            const normalizedUrl = normalizeUrl(newSite.url);
+
             const { data, error } = await supabase
                 .from('sites')
                 .insert({
                     user_id: user.id,
                     category_id: selectedCategoryId,
                     name: newSite.name,
-                    url: newSite.url,
+                    url: normalizedUrl,
                     logo: newSite.logo,
                     visits: 0,
                     order_index: sites.filter((s) => s.category_id === selectedCategoryId).length,
@@ -349,7 +370,7 @@ export default function Admin() {
             setNewSite({ name: '', url: '', logo: '🔗' });
         } catch (error) {
             console.error('添加网站失败:', error);
-            alert('添加网站失败');
+            alert('添加网站失败: ' + (error instanceof Error ? error.message : '未知错误'));
         } finally {
             setLoading(false);
         }
@@ -360,22 +381,26 @@ export default function Admin() {
 
         setLoading(true);
         try {
+            // 验证和规范化URL
+            const normalizedUrl = normalizeUrl(editingSite.url);
+
             const { error } = await supabase
                 .from('sites')
                 .update({
                     name: editingSite.name,
-                    url: editingSite.url,
+                    url: normalizedUrl,
                     logo: editingSite.logo,
                     category_id: editingSite.category_id,
                 })
                 .eq('id', editingSite.id);
 
             if (error) throw error;
-            setSites(sites.map((site) => (site.id === editingSite.id ? editingSite : site)));
+            const updatedSite = { ...editingSite, url: normalizedUrl };
+            setSites(sites.map((site) => (site.id === editingSite.id ? updatedSite : site)));
             setEditingSite(null);
         } catch (error) {
             console.error('更新网站失败:', error);
-            alert('更新网站失败');
+            alert('更新网站失败: ' + (error instanceof Error ? error.message : '未知错误'));
         } finally {
             setLoading(false);
         }
