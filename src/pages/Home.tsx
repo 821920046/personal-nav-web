@@ -282,14 +282,32 @@ export default function Home() {
                 {/* 图标 */}
                 <div className="flex items-center justify-center mb-2 md:mb-3">
                   <img
-                    src={`https://unavatar.io/${new URL(site.url).hostname}?fallback=false`}
+                    src={`https://unavatar.io/${(() => {
+                      try {
+                        return new URL(site.url).hostname;
+                      } catch {
+                        return 'localhost';
+                      }
+                    })()}?fallback=false`}
                     alt={site.name}
                     className="w-10 h-10 md:w-12 md:h-12 group-hover:scale-110 transition-transform"
                     loading="lazy"
                     onError={(e) => {
                       const img = e.currentTarget;
                       const currentSrc = img.src;
-                      const hostname = new URL(site.url).hostname;
+                      let hostname = 'localhost';
+                      try {
+                        hostname = new URL(site.url).hostname;
+                      } catch (e) {
+                        // Invalid URL, fallback to emoji
+                        img.style.display = 'none';
+                        const emojiSpan = img.nextElementSibling as HTMLElement;
+                        if (emojiSpan) {
+                          emojiSpan.classList.remove('hidden');
+                          emojiSpan.classList.add('flex');
+                        }
+                        return;
+                      }
 
                       // 5-tier fallback chain: unavatar -> icon.horse -> direct favicon -> Google -> emoji
                       if (currentSrc.includes('unavatar.io')) {
