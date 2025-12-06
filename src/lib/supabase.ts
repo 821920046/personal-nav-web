@@ -7,7 +7,14 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('缺少 Supabase 环境变量，请检查 .env 文件');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storage: typeof window !== 'undefined' ? localStorage : undefined,
+  }
+});
 
 // 数据库类型定义
 export interface Category {
