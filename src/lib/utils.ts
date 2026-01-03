@@ -35,3 +35,25 @@ export function sanitizeText(text: string): string {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#x27;');
 }
+
+import { toast } from 'sonner';
+export const logger = {
+  info(message: string) {
+    if (import.meta.env.DEV) {
+      console.info(message);
+    }
+    toast.message(message);
+  },
+  warn(message: string) {
+    if (import.meta.env.DEV) {
+      console.warn(message);
+    }
+    toast.warning(message);
+  },
+  error(message: string) {
+    if (import.meta.env.DEV) {
+      console.error(message);
+    }
+    toast.error(message);
+  }
+}

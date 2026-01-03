@@ -152,44 +152,22 @@ export default function Sidebar({
                     </nav>
                 </div>
 
-                {/* 底部用户控制区 */}
+                {/* 底部用户控制区（移除“管理后台”入口，仅保留退出登录/登录入口可选） */}
                 <div className="p-4 border-t border-green-500/20 space-y-2">
                     {user ? (
-                        <>
-                            <button
-                                onClick={() => {
-                                    navigate('/admin');
-                                    if (isMobile) onClose();
-                                }}
-                                className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-lg transition-colors"
-                                title="管理后台"
-                            >
-                                <SettingsIcon className="w-4 h-4 flex-shrink-0" />
-                                {!isCollapsed && <span className="text-sm">管理后台</span>}
-                            </button>
-                            <button
-                                onClick={() => {
-                                    onLogout();
-                                    if (isMobile) onClose();
-                                }}
-                                className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-lg transition-colors"
-                                title="退出登录"
-                            >
-                                <LogOut className="w-4 h-4 flex-shrink-0" />
-                                {!isCollapsed && <span className="text-sm">退出登录</span>}
-                            </button>
-                        </>
-                    ) : (
                         <button
                             onClick={() => {
-                                navigate('/login');
+                                onLogout();
                                 if (isMobile) onClose();
                             }}
-                            className="w-full px-4 py-3 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-lg transition-colors text-sm"
-                            title="登录"
+                            className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-lg transition-colors"
+                            title="退出登录"
                         >
-                            {isCollapsed ? '🔑' : '登录'}
+                            <LogOut className="w-4 h-4 flex-shrink-0" />
+                            {!isCollapsed && <span className="text-sm">退出登录</span>}
                         </button>
+                    ) : (
+                        <></>
                     )}
                 </div>
             </aside>

@@ -38,6 +38,18 @@
 - **访问统计** - 查看网站访问量排行
 - **Logo配置** - 自定义网站Logo和标题
 
+## 🆕 最近更新
+
+- 类型严格化：开启 TypeScript 严格模式（pages、lib 优先修复）
+- 管理后台懒加载：Admin 拆分为「分类 / 网站 / 设置 / 数据」四个子标签，按需加载
+- Service Worker 优化：静态资源缓存优先；HTML 网络优先；跳过 Supabase 动态请求
+- 数据库索引：增加/验证 categories(user_id, order_index) 与 sites(category_id, order_index) 复合索引
+- 无障碍：为按钮和图标补充 aria-label（导航返回、标签切换、数据操作）
+- 统一日志：新增 logger 接口，开发保留 console，生产结合 toast 提示
+- 安全导入：书签导入增加 URL 验证与规范化（屏蔽 javascript: 等危险协议）
+- 体验调整：用 sonner toast 替代 alert；仅 /admin 路由触发登录验证，移除前端页面的入口按钮
+- 代码质量：升级 ESLint v9 配置，完善 Node / Service Worker 环境声明
+
 ## 🚀 技术栈
 
 ### 前端框架
@@ -256,6 +268,28 @@ nav-website-fullstack-backup/
    - 配置合适的会话超时时间
 
 ## 📝 更新日志
+
+### v4.0.3 (2026-01-03)
+
+#### 🔒 安全
+- 书签导入增加 URL 验证与规范化（isValidUrl / normalizeUrl）
+- 移除前端页面的管理入口，仅当访问 `/admin` 时触发登录验证
+
+#### ⚡ 性能
+- 管理后台拆分四个懒加载子标签（Categories / Sites / Settings / Data）
+- Service Worker 策略优化：静态资源缓存优先；HTML 网络优先；跳过 Supabase 请求
+- Vite 手动分包（react-vendor / supabase / dnd-kit / ui），减小首屏体积
+
+#### ♿ 无障碍
+- 为导航返回按钮、标签切换按钮以及数据操作按钮补充 aria-label
+
+#### 🧰 维护性
+- 启用 TypeScript 严格模式，优先修复 pages 与 lib 中的可空/any
+- 新增统一日志接口 logger，开发环境保留 console，生产结合 toast
+- 升级 ESLint v9 配置并修复环境声明（Node / serviceworker）
+
+#### 🗄️ 数据库
+- 增加/验证复合索引：`categories(user_id, order_index)`、`sites(category_id, order_index)`，加速排序与查询
 
 ### v4.0.2 (2024-12-06)
 

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, Suspense, lazy } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, type Category, type Site, type Settings } from '../lib/supabase';
@@ -34,6 +34,11 @@ import {
 } from 'lucide-react';
 import { parseHTMLBookmarks, parseJSONBookmarks, getEmojiForUrl } from '../lib/bookmarkParser';
 import { toast } from 'sonner';
+import { logger } from '../lib/utils';
+const CategoriesTab = lazy(() => import('./admin/CategoriesTab'));
+const SitesTab = lazy(() => import('./admin/SitesTab'));
+const SettingsTab = lazy(() => import('./admin/SettingsTab'));
+const DataTab = lazy(() => import('./admin/DataTab'));
 
 // 可排序分类项组件
 function SortableCategory({ category, onEdit, onDelete }: any) {
@@ -281,7 +286,7 @@ export default function Admin() {
             setCategories([...categories, data]);
             setNewCategoryName('');
         } catch (error) {
-            console.error('添加分类失败:', error);
+            logger.error('添加分类失败');
             toast.error('添加分类失败');
         } finally {
             setLoading(false);
@@ -304,7 +309,7 @@ export default function Admin() {
             );
             setEditingCategory(null);
         } catch (error) {
-            console.error('更新分类失败:', error);
+            logger.error('更新分类失败');
             toast.error('更新分类失败');
         } finally {
             setLoading(false);
@@ -321,7 +326,7 @@ export default function Admin() {
             setCategories(categories.filter((cat) => cat.id !== id));
             setSites(sites.filter((site) => site.category_id !== id));
         } catch (error) {
-            console.error('删除分类失败:', error);
+            logger.error('删除分类失败');
             toast.error('删除分类失败');
         } finally {
             setGlobalLoading(false);
@@ -381,7 +386,7 @@ export default function Admin() {
             setSites([...sites, data]);
             setNewSite({ name: '', url: '', logo: '🔗' });
         } catch (error) {
-            console.error('添加网站失败:', error);
+            logger.error('添加网站失败');
             toast.error('添加网站失败: ' + (error instanceof Error ? error.message : '未知错误'));
         } finally {
             setLoading(false);
@@ -411,7 +416,7 @@ export default function Admin() {
             setSites(sites.map((site) => (site.id === editingSite.id ? updatedSite : site)));
             setEditingSite(null);
         } catch (error) {
-            console.error('更新网站失败:', error);
+            logger.error('更新网站失败');
             toast.error('更新网站失败: ' + (error instanceof Error ? error.message : '未知错误'));
         } finally {
             setLoading(false);
@@ -427,7 +432,7 @@ export default function Admin() {
             if (error) throw error;
             setSites(sites.filter((site) => site.id !== id));
         } catch (error) {
-            console.error('删除网站失败:', error);
+            logger.error('删除网站失败');
             toast.error('删除网站失败');
         } finally {
             setGlobalLoading(false);
@@ -485,7 +490,7 @@ export default function Admin() {
             // 重新加载数据以获取最新的 settings
             loadData();
         } catch (error) {
-            console.error('保存设置失败:', error);
+            logger.error('保存设置失败');
             toast.error('保存设置失败');
         } finally {
             setLoading(false);
@@ -521,7 +526,7 @@ export default function Admin() {
             };
             reader.readAsDataURL(file);
         } catch (error) {
-            console.error('处理图片失败:', error);
+            logger.error('处理图片失败');
             toast.error('处理图片失败');
         }
     };
@@ -606,7 +611,7 @@ export default function Admin() {
             toast.success('数据导入成功！');
             window.location.reload();
         } catch (error) {
-            console.error('导入数据失败:', error);
+            logger.error('导入数据失败');
             toast.error('导入数据失败，请检查文件格式');
         } finally {
             setGlobalLoading(false);
@@ -802,7 +807,7 @@ export default function Admin() {
             window.location.reload();
 
         } catch (error) {
-            console.error('导入书签失败:', error);
+            logger.error('导入书签失败');
             toast.error('导入书签失败，请检查文件格式或网络连接');
         } finally {
             setGlobalLoading(false);
@@ -812,6 +817,7 @@ export default function Admin() {
 
     // 一键清除所有数据
     const handleClearAllData = async () => {
+        if (!user) return;
         const confirmText = '清除所有数据';
         const userInput = prompt(
             `⚠️ 此操作将删除所有书签和网站!\n\n这个操作不可恢复!\n\n请输入 "${confirmText}" 确认:`
@@ -837,7 +843,7 @@ export default function Admin() {
             toast.success('所有书签和网站已清除!');
             window.location.reload();
         } catch (error) {
-            console.error('清除数据失败:', error);
+            logger.error('清除数据失败');
             toast.error('清除数据失败,请重试');
         } finally {
             setGlobalLoading(false);
@@ -882,6 +888,7 @@ export default function Admin() {
                     <button
                         onClick={() => navigate('/')}
                         className="flex items-center space-x-2 px-4 py-2 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-lg transition-colors"
+                        aria-label="返回首页"
                     >
                         <Home className="w-4 h-4" />
                         <span>返回首页</span>
@@ -905,6 +912,7 @@ export default function Admin() {
                                 ? 'text-green-500 border-b-2 border-green-500'
                                 : 'text-green-400/50 hover:text-green-400'
                                 }`}
+                            aria-label={`切换到${tab.label}`}
                         >
                             {tab.label}
                         </button>
@@ -913,429 +921,72 @@ export default function Admin() {
 
                 {/* 分类管理 */}
                 {activeTab === 'categories' && (
-                    <div className="max-w-2xl">
-                        <div className="mb-6 flex space-x-2">
-                            <input
-                                type="text"
-                                value={newCategoryName}
-                                onChange={(e) => setNewCategoryName(e.target.value)}
-                                placeholder="新分类名称"
-                                className="flex-1 px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white placeholder-green-500/50 focus:outline-none focus:border-green-500"
-                            />
-                            <button
-                                onClick={handleAddCategory}
-                                disabled={loading}
-                                className="flex items-center space-x-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-black font-semibold rounded-lg transition-colors disabled:opacity-50"
-                            >
-                                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
-                                <span>添加</span>
-                            </button>
-                        </div>
-
-                        {editingCategory && (
-                            <div className="mb-6 p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
-                                <div className="flex items-center space-x-2">
-                                    <input
-                                        type="text"
-                                        value={editingCategory.name}
-                                        onChange={(e) =>
-                                            setEditingCategory({ ...editingCategory, name: e.target.value })
-                                        }
-                                        className="flex-1 px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
-                                    />
-                                    <button
-                                        onClick={handleUpdateCategory}
-                                        disabled={loading}
-                                        className="p-2 bg-green-500 hover:bg-green-600 text-black rounded-lg transition-colors"
-                                    >
-                                        {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                                    </button>
-                                    <button
-                                        onClick={() => setEditingCategory(null)}
-                                        className="p-2 bg-red-500/20 hover:bg-red-500/30 text-red-500 rounded-lg transition-colors"
-                                    >
-                                        <X className="w-5 h-5" />
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-
-                        <DndContext
+                    <Suspense fallback={<div className="text-green-500">加载中...</div>}>
+                        <CategoriesTab
+                            categories={categories}
                             sensors={sensors}
-                            collisionDetection={closestCenter}
-                            onDragEnd={handleDragEndCategories}
-                        >
-                            <SortableContext items={categories} strategy={verticalListSortingStrategy}>
-                                <div className="space-y-2">
-                                    {categories.map((category) => (
-                                        <SortableCategory
-                                            key={category.id}
-                                            category={category}
-                                            onEdit={setEditingCategory}
-                                            onDelete={handleDeleteCategory}
-                                        />
-                                    ))}
-                                </div>
-                            </SortableContext>
-                        </DndContext>
-                    </div >
+                            newCategoryName={newCategoryName}
+                            setNewCategoryName={setNewCategoryName}
+                            editingCategory={editingCategory}
+                            setEditingCategory={setEditingCategory}
+                            handleAddCategory={handleAddCategory}
+                            handleUpdateCategory={handleUpdateCategory}
+                            handleDeleteCategory={handleDeleteCategory}
+                            handleDragEndCategories={handleDragEndCategories}
+                            loading={loading}
+                            SortableCategory={SortableCategory}
+                        />
+                    </Suspense>
                 )}
 
                 {/* 网站管理 */}
-                {
-                    activeTab === 'sites' && (
-                        <div className="max-w-3xl">
-                            <div className="mb-6">
-                                <label className="block text-sm font-medium text-green-400 mb-2">选择分类</label>
-                                <select
-                                    value={selectedCategoryId}
-                                    onChange={(e) => setSelectedCategoryId(e.target.value)}
-                                    className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
-                                >
-                                    <option value="">请选择分类</option>
-                                    {categories.map((cat) => (
-                                        <option key={cat.id} value={cat.id}>
-                                            {cat.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            {selectedCategoryId && (
-                                <>
-                                    <div className="mb-6 p-4 bg-black/60 border border-green-500/30 rounded-lg">
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                                            <input
-                                                type="text"
-                                                value={newSite.name}
-                                                onChange={(e) => setNewSite({ ...newSite, name: e.target.value })}
-                                                placeholder="网站名称"
-                                                className="px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white placeholder-green-500/50 focus:outline-none focus:border-green-500"
-                                            />
-                                            <input
-                                                type="url"
-                                                value={newSite.url}
-                                                onChange={(e) => setNewSite({ ...newSite, url: e.target.value })}
-                                                placeholder="https://..."
-                                                className="px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white placeholder-green-500/50 focus:outline-none focus:border-green-500"
-                                            />
-                                            <input
-                                                type="text"
-                                                value={newSite.logo}
-                                                onChange={(e) => setNewSite({ ...newSite, logo: e.target.value })}
-                                                placeholder="🔗"
-                                                className="px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white placeholder-green-500/50 focus:outline-none focus:border-green-500"
-                                            />
-                                        </div>
-                                        <button
-                                            onClick={handleAddSite}
-                                            disabled={loading}
-                                            className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-black font-semibold rounded-lg transition-colors disabled:opacity-50"
-                                        >
-                                            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
-                                            <span>添加网站</span>
-                                        </button>
-                                    </div>
-
-                                    {editingSite && (
-                                        <div className="mb-6 p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
-                                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                                                <input
-                                                    type="text"
-                                                    value={editingSite.name}
-                                                    onChange={(e) =>
-                                                        setEditingSite({ ...editingSite, name: e.target.value })
-                                                    }
-                                                    placeholder="网站名称"
-                                                    className="px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
-                                                />
-                                                <input
-                                                    type="url"
-                                                    value={editingSite.url}
-                                                    onChange={(e) =>
-                                                        setEditingSite({ ...editingSite, url: e.target.value })
-                                                    }
-                                                    placeholder="https://..."
-                                                    className="px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    value={editingSite.logo}
-                                                    onChange={(e) =>
-                                                        setEditingSite({ ...editingSite, logo: e.target.value })
-                                                    }
-                                                    placeholder="🔗"
-                                                    className="px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
-                                                />
-                                                <select
-                                                    value={editingSite.category_id}
-                                                    onChange={(e) =>
-                                                        setEditingSite({ ...editingSite, category_id: e.target.value })
-                                                    }
-                                                    className="px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
-                                                >
-                                                    {categories.map((cat) => (
-                                                        <option key={cat.id} value={cat.id}>
-                                                            {cat.name}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                            <div className="flex space-x-2">
-                                                <button
-                                                    onClick={handleUpdateSite}
-                                                    disabled={loading}
-                                                    className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-black font-semibold rounded-lg transition-colors"
-                                                >
-                                                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                                                    <span>保存</span>
-                                                </button>
-                                                <button
-                                                    onClick={() => setEditingSite(null)}
-                                                    className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-500 rounded-lg transition-colors"
-                                                >
-                                                    取消
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    <DndContext
-                                        sensors={sensors}
-                                        collisionDetection={closestCenter}
-                                        onDragEnd={handleDragEndSites}
-                                    >
-                                        <SortableContext items={filteredSites} strategy={verticalListSortingStrategy}>
-                                            <div className="space-y-2">
-                                                {filteredSites.map((site) => (
-                                                    <SortableSite
-                                                        key={site.id}
-                                                        site={site}
-                                                        onEdit={setEditingSite}
-                                                        onDelete={handleDeleteSite}
-                                                    />
-                                                ))}
-                                            </div>
-                                        </SortableContext>
-                                    </DndContext>
-                                </>
-                            )}
-                        </div>
-                    )
-                }
+                {activeTab === 'sites' && (
+                    <Suspense fallback={<div className="text-green-500">加载中...</div>}>
+                        <SitesTab
+                            categories={categories}
+                            selectedCategoryId={selectedCategoryId}
+                            setSelectedCategoryId={setSelectedCategoryId}
+                            newSite={newSite}
+                            setNewSite={setNewSite}
+                            handleAddSite={handleAddSite}
+                            loading={loading}
+                            editingSite={editingSite}
+                            setEditingSite={setEditingSite}
+                            handleUpdateSite={handleUpdateSite}
+                            filteredSites={filteredSites}
+                            sensors={sensors}
+                            handleDragEndSites={handleDragEndSites}
+                            handleDeleteSite={handleDeleteSite}
+                            SortableSite={SortableSite}
+                        />
+                    </Suspense>
+                )}
 
                 {/* 设置 */}
-                {
-                    activeTab === 'settings' && (
-                        <div className="max-w-3xl space-y-6">
-                            {/* 网站标题 */}
-                            <div>
-                                <label className="block text-sm font-medium text-green-400 mb-2">网站标题</label>
-                                <input
-                                    type="text"
-                                    value={settingsForm.site_title}
-                                    onChange={(e) =>
-                                        setSettingsForm({ ...settingsForm, site_title: e.target.value })
-                                    }
-                                    className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
-                                />
-                            </div>
-
-                            {/* Logo 上传 */}
-                            <div className="p-4 bg-black/40 border border-green-500/20 rounded-lg">
-                                <label className="block text-sm font-medium text-green-400 mb-3">网站 Logo</label>
-
-                                {/* Logo 类型选择 */}
-                                <div className="flex gap-2 mb-4">
-                                    <button
-                                        onClick={() => setLogoType('emoji')}
-                                        className={`px-4 py-2 rounded-lg transition-colors ${logoType === 'emoji'
-                                            ? 'bg-green-500 text-black font-semibold'
-                                            : 'bg-black/60 text-green-400 border border-green-500/30'
-                                            }`}
-                                    >
-                                        Emoji
-                                    </button>
-                                    <button
-                                        onClick={() => setLogoType('url')}
-                                        className={`px-4 py-2 rounded-lg transition-colors ${logoType === 'url'
-                                            ? 'bg-green-500 text-black font-semibold'
-                                            : 'bg-black/60 text-green-400 border border-green-500/30'
-                                            }`}
-                                    >
-                                        图床链接
-                                    </button>
-                                    <button
-                                        onClick={() => setLogoType('upload')}
-                                        className={`px-4 py-2 rounded-lg transition-colors ${logoType === 'upload'
-                                            ? 'bg-green-500 text-black font-semibold'
-                                            : 'bg-black/60 text-green-400 border border-green-500/30'
-                                            }`}
-                                    >
-                                        上传图片
-                                    </button>
-                                </div>
-
-                                {/* Emoji 输入 */}
-                                {logoType === 'emoji' && (
-                                    <input
-                                        type="text"
-                                        value={settingsForm.logo_content}
-                                        onChange={(e) =>
-                                            setSettingsForm({ ...settingsForm, logo_content: e.target.value })
-                                        }
-                                        placeholder="输入 Emoji，如 🌐"
-                                        className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white placeholder-green-500/50 focus:outline-none focus:border-green-500"
-                                    />
-                                )}
-
-                                {/* URL 输入 */}
-                                {logoType === 'url' && (
-                                    <input
-                                        type="url"
-                                        value={settingsForm.logo_content}
-                                        onChange={(e) =>
-                                            setSettingsForm({ ...settingsForm, logo_content: e.target.value })
-                                        }
-                                        placeholder="https://example.com/logo.png"
-                                        className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white placeholder-green-500/50 focus:outline-none focus:border-green-500"
-                                    />
-                                )}
-
-                                {/* 文件上传 */}
-                                {logoType === 'upload' && (
-                                    <div>
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={handleLogoFileChange}
-                                            className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-500 file:text-black file:font-semibold hover:file:bg-green-600"
-                                        />
-                                        <p className="text-green-500/50 text-xs mt-2">支持 JPG、PNG、GIF，最大 2MB</p>
-                                    </div>
-                                )}
-
-                                {/* Logo 预览 */}
-                                {settingsForm.logo_content && (
-                                    <div className="mt-4 p-4 bg-black/60 border border-green-500/30 rounded-lg">
-                                        <p className="text-green-400 text-sm mb-2">预览：</p>
-                                        {logoType === 'emoji' ? (
-                                            <span className="text-4xl">{settingsForm.logo_content}</span>
-                                        ) : (
-                                            <img
-                                                src={settingsForm.logo_content}
-                                                alt="Logo Preview"
-                                                className="w-16 h-16 object-contain"
-                                                onError={(e) => {
-                                                    e.currentTarget.style.display = 'none';
-                                                }}
-                                            />
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-
-
-                            {/* 默认搜索引擎 */}
-                            <div>
-                                <label className="block text-sm font-medium text-green-400 mb-2">默认搜索引擎</label>
-                                <select
-                                    value={settingsForm.default_search_engine}
-                                    onChange={(e) =>
-                                        setSettingsForm({ ...settingsForm, default_search_engine: e.target.value })
-                                    }
-                                    className="w-full px-4 py-2 bg-black/60 border border-green-500/30 rounded-lg text-white focus:outline-none focus:border-green-500"
-                                >
-                                    <option value="google">Google</option>
-                                    <option value="bing">Bing</option>
-                                    <option value="baidu">百度</option>
-                                </select>
-                            </div>
-
-                            {/* 保存按钮 */}
-                            <button
-                                onClick={handleSaveSettings}
-                                disabled={loading}
-                                className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-green-500 hover:bg-green-600 text-black font-semibold rounded-lg transition-colors disabled:opacity-50"
-                            >
-                                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                                <span>保存设置</span>
-                            </button>
-                        </div>
-                    )
-                }
+                {activeTab === 'settings' && (
+                    <Suspense fallback={<div className="text-green-500">加载中...</div>}>
+                        <SettingsTab
+                            settingsForm={settingsForm}
+                            setSettingsForm={setSettingsForm}
+                            logoType={logoType}
+                            setLogoType={setLogoType}
+                            handleLogoFileChange={handleLogoFileChange}
+                            handleSaveSettings={handleSaveSettings}
+                            loading={loading}
+                        />
+                    </Suspense>
+                )}
                 {/* 数据管理 */}
-                {
-                    activeTab === 'data' && (
-                        <div className="max-w-2xl space-y-6">
-                            <div className="p-6 bg-black/60 border border-green-500/30 rounded-lg">
-                                <h3 className="text-lg font-semibold text-green-500 mb-4">导出数据</h3>
-                                <p className="text-green-400/70 mb-4">
-                                    导出所有分类、网站和设置数据为 JSON 文件，用于备份或迁移。
-                                </p>
-                                <button
-                                    onClick={handleExportData}
-                                    className="flex items-center space-x-2 px-6 py-3 bg-green-500 hover:bg-green-600 text-black font-semibold rounded-lg transition-colors"
-                                >
-                                    <Download className="w-5 h-5" />
-                                    <span>导出数据</span>
-                                </button>
-                            </div>
-
-                            <div className="p-6 bg-black/60 border border-green-500/30 rounded-lg">
-                                <h3 className="text-lg font-semibold text-green-500 mb-4">导入数据</h3>
-                                <p className="text-green-400/70 mb-4">
-                                    从之前导出的 JSON 文件导入数据。<strong className="text-red-400">注意：这将覆盖当前所有数据！</strong>
-                                </p>
-                                <label className="flex items-center space-x-2 px-6 py-3 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-lg transition-colors cursor-pointer">
-                                    <Upload className="w-5 h-5 text-green-500" />
-                                    <span className="text-green-500 font-semibold">选择文件导入</span>
-                                    <input
-                                        type="file"
-                                        accept=".json"
-                                        onChange={handleImportData}
-                                        className="hidden"
-                                    />
-                                </label>
-                            </div>
-
-                            <div className="p-6 bg-black/60 border border-green-500/30 rounded-lg">
-                                <h3 className="text-lg font-semibold text-green-500 mb-4">导入书签</h3>
-                                <p className="text-green-400/70 mb-4">
-                                    从浏览器导出的 HTML 书签文件或 JSON 格式导入书签。支持 Chrome、Firefox、Edge 等浏览器。
-                                    <br />
-                                    <span className="text-green-500/70 text-sm">💡 书签将被追加到现有数据中,不会覆盖。</span>
-                                </p>
-                                <label className="flex items-center space-x-2 px-6 py-3 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-lg transition-colors cursor-pointer">
-                                    <FileText className="w-5 h-5 text-green-500" />
-                                    <span className="text-green-500 font-semibold">选择书签文件</span>
-                                    <input
-                                        type="file"
-                                        accept=".html,.htm,.json"
-                                        onChange={handleImportBookmarks}
-                                        className="hidden"
-                                    />
-                                </label>
-                            </div>
-
-                            <div className="p-6 bg-black/60 border border-red-500/30 rounded-lg">
-                                <h3 className="text-lg font-semibold text-red-500 mb-4">⚠️ 危险操作</h3>
-                                <p className="text-red-400/70 mb-4">
-                                    清除所有书签和网站数据。<strong className="text-red-500">此操作不可恢复!</strong>
-                                    <br />
-                                    <span className="text-red-400/50 text-sm">注意: 分类不会被删除,只删除网站数据。</span>
-                                </p>
-                                <button
-                                    onClick={handleClearAllData}
-                                    className="flex items-center space-x-2 px-6 py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-lg transition-colors"
-                                >
-                                    <Trash2 className="w-5 h-5 text-red-500" />
-                                    <span className="text-red-500 font-semibold">清除所有数据</span>
-                                </button>
-                            </div>
-                        </div>
-                    )
-                }
+                {activeTab === 'data' && (
+                    <Suspense fallback={<div className="text-green-500">加载中...</div>}>
+                        <DataTab
+                            handleExportData={handleExportData}
+                            handleImportData={handleImportData}
+                            handleImportBookmarks={handleImportBookmarks}
+                            handleClearAllData={handleClearAllData}
+                        />
+                    </Suspense>
+                )}
             </div >
         </div >
     )
