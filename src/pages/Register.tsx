@@ -43,7 +43,7 @@ export default function Register() {
                 await supabase.from('settings').insert({
                     user_id: user.id,
                     site_title: '智能导航网站',
-                    logo_type: 'url',
+                    logo_type: 'emoji',
                     logo_content: '🌐',
                     default_search_engine: 'google',
                 });

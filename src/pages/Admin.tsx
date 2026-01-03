@@ -209,7 +209,7 @@ export default function Admin() {
                     id: '',
                     user_id: user.id,
                     site_title: '智能导航网站',
-                    logo_type: 'url',
+                    logo_type: 'emoji',
                     logo_content: '🌐',
                     default_search_engine: 'google',
                     created_at: '',

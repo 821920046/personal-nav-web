@@ -20,6 +20,16 @@ export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
+  const settingsEngineToLabel = (engine: string) => {
+    const map: Record<string, string> = {
+      google: 'Google',
+      baidu: '百度',
+      bing: 'Bing',
+      github: 'github',
+    };
+    return map[engine?.toLowerCase()] || 'Google';
+  };
+
   // 加载进度条动画
   useEffect(() => {
     if (loading) {
@@ -50,7 +60,7 @@ export default function Home() {
         id: '',
         user_id: user?.id || '',
         site_title: '智能导航网站',
-        logo_type: 'url',
+        logo_type: 'emoji',
         logo_content: '🌐',
         default_search_engine: 'google',
         created_at: '',
@@ -66,12 +76,15 @@ export default function Home() {
 
         if (settingsData) {
           setSettings(settingsData);
+          setSearchEngine(settingsEngineToLabel(settingsData.default_search_engine));
         } else {
           setSettings(defaultSettings);
+          setSearchEngine(settingsEngineToLabel(defaultSettings.default_search_engine));
         }
       } else {
         // 游客默认设置
         setSettings(defaultSettings);
+        setSearchEngine(settingsEngineToLabel(defaultSettings.default_search_engine));
       }
 
       // 加载分类和网站（显示所有公开数据或用户数据）
