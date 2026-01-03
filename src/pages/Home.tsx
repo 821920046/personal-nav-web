@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, type Category, type Site, type Settings } from '../lib/supabase';
 import MatrixRain from '../components/MatrixRain';
 import Sidebar from '../components/Sidebar';
 import { Search, Menu, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function Home() {
   const { user, signOut } = useAuth();
@@ -46,12 +47,7 @@ export default function Home() {
     }
   }, [loading]);
 
-  // 加载数据
-  useEffect(() => {
-    loadData();
-  }, [user]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       // 加载设置（游客使用默认设置）
@@ -100,13 +96,17 @@ export default function Home() {
 
       setCategories(categoriesData || []);
       setSites(sitesData || []);
-    } catch (error) {
-      console.error('加载数据失败:', error);
+    } catch {
+      toast.error('加载数据失败');
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
+  // 加载数据
+  useEffect(() => {
+    loadData();
+  }, [user, loadData]);
   // 处理网站点击（仅登录用户更新访问次数）
   const handleSiteClick = async (site: Site) => {
     if (user) {
@@ -135,14 +135,7 @@ export default function Home() {
     setSearchQuery('');
   };
 
-  // 获取最近访问的网站（仅登录用户）
-  const getRecentSites = () => {
-    if (!user) return [];
-    return [...sites]
-      .filter((site) => site.visits > 0)
-      .sort((a, b) => b.visits - a.visits)
-      .slice(0, 8);
-  };
+  
 
   // 获取所有网站,按访问次数排序
   const getAllSitesSortedByVisits = () => {
@@ -311,7 +304,7 @@ export default function Home() {
                       let hostname = 'localhost';
                       try {
                         hostname = new URL(site.url).hostname;
-                      } catch (e) {
+                      } catch {
                         // Invalid URL, fallback to emoji
                         img.style.display = 'none';
                         const emojiSpan = img.nextElementSibling as HTMLElement;

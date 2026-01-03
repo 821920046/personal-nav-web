@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, type Category, type Site, type Settings } from '../lib/supabase';
@@ -162,13 +162,7 @@ export default function Admin() {
         })
     );
 
-    useEffect(() => {
-        if (user) {
-            loadData();
-        }
-    }, [user]);
-
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         if (!user) return;
 
         setGlobalLoading(true);
@@ -230,8 +224,13 @@ export default function Admin() {
         } finally {
             setGlobalLoading(false);
         }
-    };
+    }, [user]);
 
+    useEffect(() => {
+        if (user) {
+            loadData();
+        }
+    }, [user, loadData]);
     // URL验证和规范化函数
     const normalizeUrl = (url: string): string => {
         let normalizedUrl = url.trim();
@@ -243,10 +242,22 @@ export default function Admin() {
 
         // 验证URL是否有效
         try {
-            new URL(normalizedUrl);
-            return normalizedUrl;
+            const u = new URL(normalizedUrl);
+            if (!/^https?:$/.test(u.protocol)) {
+                throw new Error('仅允许 http/https 协议');
+            }
+            return u.toString();
         } catch (e) {
             throw new Error('无效的URL格式');
+        }
+    };
+    const isSafeUrl = (url: string): boolean => {
+        try {
+            const normalized = normalizeUrl(url);
+            const u = new URL(normalized);
+            return /^https?:$/.test(u.protocol);
+        } catch {
+            return false;
         }
     };
 
@@ -706,17 +717,18 @@ export default function Admin() {
                 bookmarks.forEach((bookmark, index) => {
                     if (existingUrls.has(bookmark.url)) {
                         skippedCount++;
-                    } else {
+                    } else if (isSafeUrl(bookmark.url)) {
+                        const safeUrl = normalizeUrl(bookmark.url);
                         sitesToInsert.push({
                             user_id: user.id,
                             category_id: categoryId,
                             name: bookmark.name,
-                            url: bookmark.url,
-                            logo: getEmojiForUrl(bookmark.url),
+                            url: safeUrl,
+                            logo: getEmojiForUrl(safeUrl),
                             visits: 0,
                             order_index: index, // 保持原有顺序
                         });
-                        existingUrls.add(bookmark.url); // 防止文件内部重复
+                        existingUrls.add(safeUrl); // 防止文件内部重复
                     }
                 });
             }
@@ -743,17 +755,18 @@ export default function Admin() {
                     parsedData.uncategorized.forEach((bookmark, index) => {
                         if (existingUrls.has(bookmark.url)) {
                             skippedCount++;
-                        } else {
+                        } else if (isSafeUrl(bookmark.url)) {
+                            const safeUrl = normalizeUrl(bookmark.url);
                             sitesToInsert.push({
                                 user_id: user.id,
                                 category_id: uncategorizedId,
                                 name: bookmark.name,
-                                url: bookmark.url,
-                                logo: getEmojiForUrl(bookmark.url),
+                                url: safeUrl,
+                                logo: getEmojiForUrl(safeUrl),
                                 visits: 0,
                                 order_index: index,
                             });
-                            existingUrls.add(bookmark.url);
+                            existingUrls.add(safeUrl);
                         }
                     });
                 }
