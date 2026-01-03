@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings as SettingsIcon, LogOut, Menu, X, Home, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Settings as SettingsIcon, LogOut, X, Home, ChevronLeft, ChevronRight } from 'lucide-react';
 import { type Category } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
+import { useIsMobile } from '../hooks/use-mobile';
 
 interface SidebarProps {
     categories: Category[];
@@ -32,18 +33,7 @@ export default function Sidebar({
     onToggleCollapse,
 }: SidebarProps) {
     const navigate = useNavigate();
-    const [isMobile, setIsMobile] = useState(false);
-
-    // 检测屏幕尺寸
-    useEffect(() => {
-        const checkMobile = () => {
-            setIsMobile(window.innerWidth <= 768);
-        };
-
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
-    }, []);
+    const isMobile = useIsMobile();
 
     // 处理分类点击
     const handleCategoryClick = (categoryId: string | null) => {

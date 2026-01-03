@@ -33,6 +33,7 @@ import {
     FileText,
 } from 'lucide-react';
 import { parseHTMLBookmarks, parseJSONBookmarks, getEmojiForUrl } from '../lib/bookmarkParser';
+import { toast } from 'sonner';
 
 // 可排序分类项组件
 function SortableCategory({ category, onEdit, onDelete }: any) {
@@ -270,7 +271,7 @@ export default function Admin() {
             setNewCategoryName('');
         } catch (error) {
             console.error('添加分类失败:', error);
-            alert('添加分类失败');
+            toast.error('添加分类失败');
         } finally {
             setLoading(false);
         }
@@ -293,7 +294,7 @@ export default function Admin() {
             setEditingCategory(null);
         } catch (error) {
             console.error('更新分类失败:', error);
-            alert('更新分类失败');
+            toast.error('更新分类失败');
         } finally {
             setLoading(false);
         }
@@ -310,7 +311,7 @@ export default function Admin() {
             setSites(sites.filter((site) => site.category_id !== id));
         } catch (error) {
             console.error('删除分类失败:', error);
-            alert('删除分类失败');
+            toast.error('删除分类失败');
         } finally {
             setGlobalLoading(false);
         }
@@ -370,7 +371,7 @@ export default function Admin() {
             setNewSite({ name: '', url: '', logo: '🔗' });
         } catch (error) {
             console.error('添加网站失败:', error);
-            alert('添加网站失败: ' + (error instanceof Error ? error.message : '未知错误'));
+            toast.error('添加网站失败: ' + (error instanceof Error ? error.message : '未知错误'));
         } finally {
             setLoading(false);
         }
@@ -400,7 +401,7 @@ export default function Admin() {
             setEditingSite(null);
         } catch (error) {
             console.error('更新网站失败:', error);
-            alert('更新网站失败: ' + (error instanceof Error ? error.message : '未知错误'));
+            toast.error('更新网站失败: ' + (error instanceof Error ? error.message : '未知错误'));
         } finally {
             setLoading(false);
         }
@@ -416,7 +417,7 @@ export default function Admin() {
             setSites(sites.filter((site) => site.id !== id));
         } catch (error) {
             console.error('删除网站失败:', error);
-            alert('删除网站失败');
+            toast.error('删除网站失败');
         } finally {
             setGlobalLoading(false);
         }
@@ -468,13 +469,13 @@ export default function Admin() {
                 }, { onConflict: 'user_id' });
 
             if (error) throw error;
-            alert('设置保存成功！');
+            toast.success('设置保存成功！');
 
             // 重新加载数据以获取最新的 settings
             loadData();
         } catch (error) {
             console.error('保存设置失败:', error);
-            alert('保存设置失败');
+            toast.error('保存设置失败');
         } finally {
             setLoading(false);
         }
@@ -489,13 +490,13 @@ export default function Admin() {
 
         // 验证文件类型
         if (!file.type.startsWith('image/')) {
-            alert('请选择图片文件');
+            toast.error('请选择图片文件');
             return;
         }
 
         // 验证文件大小（最大 2MB）
         if (file.size > 2 * 1024 * 1024) {
-            alert('图片大小不能超过 2MB');
+            toast.error('图片大小不能超过 2MB');
             return;
         }
 
@@ -510,7 +511,7 @@ export default function Admin() {
             reader.readAsDataURL(file);
         } catch (error) {
             console.error('处理图片失败:', error);
-            alert('处理图片失败');
+            toast.error('处理图片失败');
         }
     };
 
@@ -591,11 +592,11 @@ export default function Admin() {
                     .eq('user_id', user.id);
             }
 
-            alert('数据导入成功！');
+            toast.success('数据导入成功！');
             window.location.reload();
         } catch (error) {
             console.error('导入数据失败:', error);
-            alert('导入数据失败，请检查文件格式');
+            toast.error('导入数据失败，请检查文件格式');
         } finally {
             setGlobalLoading(false);
             e.target.value = '';
@@ -784,12 +785,12 @@ export default function Admin() {
                 }
             }
 
-            alert(`导入完成！\n成功导入: ${sitesToInsert.length}\n跳过重复: ${skippedCount}`);
+            toast.success(`导入完成！成功导入: ${sitesToInsert.length}，跳过重复: ${skippedCount}`);
             window.location.reload();
 
         } catch (error) {
             console.error('导入书签失败:', error);
-            alert('导入书签失败，请检查文件格式或网络连接');
+            toast.error('导入书签失败，请检查文件格式或网络连接');
         } finally {
             setGlobalLoading(false);
             e.target.value = '';
@@ -805,7 +806,7 @@ export default function Admin() {
 
         if (userInput !== confirmText) {
             if (userInput !== null) {
-                alert('操作已取消');
+                toast.info('操作已取消');
             }
             return;
         }
@@ -820,11 +821,11 @@ export default function Admin() {
 
             if (sitesError) throw sitesError;
 
-            alert('所有书签和网站已清除!');
+            toast.success('所有书签和网站已清除!');
             window.location.reload();
         } catch (error) {
             console.error('清除数据失败:', error);
-            alert('清除数据失败,请重试');
+            toast.error('清除数据失败,请重试');
         } finally {
             setGlobalLoading(false);
         }
